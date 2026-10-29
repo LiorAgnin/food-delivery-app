@@ -66,7 +66,7 @@ describe('exception envelope', () => {
     expect(captured.body()).toEqual({
       error: {
         code: 'VALIDATION_FAILED',
-        message: 'Unexpected token',
+        message: 'Malformed JSON body',
         details: {},
       },
     })

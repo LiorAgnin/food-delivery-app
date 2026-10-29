@@ -253,6 +253,22 @@ describe('catalog', () => {
     })
   })
 
+  it('returns a fixed message for a malformed JSON body', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/restaurants')
+      .set('Content-Type', 'application/json')
+      .send('{"a"')
+      .expect(400)
+
+    expect(response.body).toEqual({
+      error: {
+        code: 'VALIDATION_FAILED',
+        message: 'Malformed JSON body',
+        details: {},
+      },
+    })
+  })
+
   it('returns the VALIDATION_FAILED envelope for an oversized body', async () => {
     const response = await request(app.getHttpServer())
       .post('/api/restaurants')

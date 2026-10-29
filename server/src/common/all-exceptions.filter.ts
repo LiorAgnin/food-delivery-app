@@ -79,14 +79,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     if (isClientFault(exception)) {
-      const message =
-        exception instanceof Error && exception.message.length > 0
-          ? exception.message
-          : 'Validation failed'
       return {
         status: HttpStatus.BAD_REQUEST,
         code: 'VALIDATION_FAILED',
-        message,
+        message: clientFaultMessage(exception),
         details: {},
       }
     }
@@ -109,6 +105,19 @@ function isClientFault (exception: unknown): boolean {
   if (isBodyParserError(exception)) return true
   const status = readStatus(exception)
   return status !== undefined && status >= 400 && status < 500
+}
+
+function clientFaultMessage (exception: unknown): string {
+  if (isParseFailure(exception)) return 'Malformed JSON body'
+  if (exception instanceof Error && exception.message.length > 0) {
+    return exception.message
+  }
+  return 'Validation failed'
+}
+
+function isParseFailure (exception: unknown): boolean {
+  if (typeof exception !== 'object' || exception === null) return false
+  return (exception as { type?: unknown }).type === 'entity.parse.failed'
 }
 
 function isBodyParserError (exception: unknown): boolean {
