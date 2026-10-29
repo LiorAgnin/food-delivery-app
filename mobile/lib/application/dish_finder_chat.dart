@@ -3,7 +3,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../domain/api_result.dart';
 import '../domain/auth/auth.dart';
 import '../domain/dish_finder/dish_finder.dart';
-import '../domain/failures/api_error.dart';
 import 'auth_session.dart';
 import 'ports.dart';
 
