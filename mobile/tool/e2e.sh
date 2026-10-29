@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
-# Patrol e2e against the Android emulator. Never run `patrol test` outside
-# this script: there is one emulator, and the lock below is the mutex.
+# Patrol e2e on a USB Android device (preferred) or the emulator. Never run
+# `patrol test` outside this script: there is one device, and the lock below is
+# the mutex. Device order: --device, $FDA_E2E_DEVICE, first USB device, running
+# emulator, then boot Pixel_10_Pro.
 # usage: tool/e2e.sh [--device SERIAL] [--target FILE] [--port PORT]
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -41,6 +43,10 @@ if ! command -v adb >/dev/null 2>&1; then
   exit 2
 fi
 
+device="${device:-${FDA_E2E_DEVICE:-}}"
+if [ -z "$device" ]; then
+  device="$(adb devices | awk 'NR>1 && $1 !~ /^emulator-/ && $2=="device" {print $1; exit}')"
+fi
 if [ -z "$device" ]; then
   device="$(adb devices | awk 'NR>1 && $1 ~ /^emulator-/ && $2=="device" {print $1; exit}')"
 fi
@@ -57,7 +63,13 @@ if [ -z "$device" ]; then
   done
 fi
 
-base="http://10.0.2.2:${port}/api"
+if [[ "$device" == emulator-* ]]; then
+  base="http://10.0.2.2:${port}/api"
+else
+  # A USB device can't reach the Mac's loopback; adb reverse tunnels the port.
+  adb -s "$device" reverse "tcp:${port}" "tcp:${port}" >/dev/null
+  base="http://localhost:${port}/api"
+fi
 echo "== patrol $target on $device against $base"
 patrol test --device "$device" --target "$target" \
   --dart-define="API_BASE_URL=${base}"
