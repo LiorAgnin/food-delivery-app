@@ -52,20 +52,23 @@ final class IdempotencyKeysProvider
 String _$idempotencyKeysHash() => r'a8046423d8a6f2331451ccb27160e389d6495560';
 
 /// One checkout attempt. The idempotency key survives a failed [place] so a
-/// retry cannot create a second order. A new key is issued only after the
-/// cart changes, because a different body with the old key is a conflict.
+/// retry of the same cart cannot create a second order. A cart edit drops
+/// the key: the body changed, and the old key would come back as
+/// `IDEMPOTENCY_CONFLICT`.
 
 @ProviderFor(Checkout)
 final checkoutProvider = CheckoutProvider._();
 
 /// One checkout attempt. The idempotency key survives a failed [place] so a
-/// retry cannot create a second order. A new key is issued only after the
-/// cart changes, because a different body with the old key is a conflict.
+/// retry of the same cart cannot create a second order. A cart edit drops
+/// the key: the body changed, and the old key would come back as
+/// `IDEMPOTENCY_CONFLICT`.
 final class CheckoutProvider
     extends $NotifierProvider<Checkout, CheckoutState> {
   /// One checkout attempt. The idempotency key survives a failed [place] so a
-  /// retry cannot create a second order. A new key is issued only after the
-  /// cart changes, because a different body with the old key is a conflict.
+  /// retry of the same cart cannot create a second order. A cart edit drops
+  /// the key: the body changed, and the old key would come back as
+  /// `IDEMPOTENCY_CONFLICT`.
   CheckoutProvider._()
     : super(
         from: null,
@@ -93,11 +96,12 @@ final class CheckoutProvider
   }
 }
 
-String _$checkoutHash() => r'cb05355d5724b150a4334949306fd62f69a43447';
+String _$checkoutHash() => r'11747c94d86ac649579312bb86d1b044cd165a8c';
 
 /// One checkout attempt. The idempotency key survives a failed [place] so a
-/// retry cannot create a second order. A new key is issued only after the
-/// cart changes, because a different body with the old key is a conflict.
+/// retry of the same cart cannot create a second order. A cart edit drops
+/// the key: the body changed, and the old key would come back as
+/// `IDEMPOTENCY_CONFLICT`.
 
 abstract class _$Checkout extends $Notifier<CheckoutState> {
   CheckoutState build();
