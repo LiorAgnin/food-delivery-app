@@ -11,6 +11,7 @@ import '../../domain/api_result.dart';
 import '../../domain/catalog/catalog.dart';
 import '../../domain/dish_finder/dish_finder.dart';
 import '../format/agorot_format.dart';
+import '../widgets/cart_badge_button.dart';
 
 const _suggestions = <String>[
   'I want a margherita pizza',
@@ -40,7 +41,10 @@ class _ChatScreenState extends ConsumerState<ChatScreen> {
     final state = ref.watch(dishFinderChatProvider);
     final pending = state.pending;
     return Scaffold(
-      appBar: AppBar(title: const Text('Dish finder')),
+      appBar: AppBar(
+        title: const Text('Dish finder'),
+        actions: const [CartBadgeButton()],
+      ),
       body: Column(
         children: [
           Expanded(

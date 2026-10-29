@@ -329,6 +329,11 @@ void main() {
     expect(container.read(cartProvider).restaurant?.id, 'grill');
     expect(container.read(cartProvider).lines.single.item.id, 'skewer');
     expect(container.read(cartProvider).lines.single.quantity, 1);
+    final badgeCounts = tester
+        .widgetList<Text>(find.byKey(const Key('cart_badge_count')))
+        .map((text) => text.data)
+        .toList();
+    expect(badgeCounts, ['1']);
 
     await tester.tap(find.text('View cart'));
     await tester.pumpAndSettle();
