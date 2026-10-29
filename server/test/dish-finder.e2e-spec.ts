@@ -273,7 +273,7 @@ describe('dish finder', () => {
     expect(replyOmitsAbsentDishes(body)).toBe(true)
   })
 
-  it('cheaper ones sorts by price under the previous cheapest dish', async () => {
+  it('cheaper ones stays at or under the previous cheapest dish', async () => {
     const response = await search([
       user('Something spicy with chicken under 60 ₪'),
       { role: 'assistant', content: 'Found 2 spicy chicken dishes under ₪60.' },
@@ -283,25 +283,48 @@ describe('dish finder', () => {
     const body = response.body as SearchBody
 
     expect(body.results.map((result) => result.menuItem.name)).toEqual([
-      'Spicy chicken skewer',
-      'Spicy chicken schnitzel',
-      'Spicy chicken platter',
-      'Half spicy chicken',
+      'Chicken schnitzel pita',
     ])
     expect(body.results.map((result) => result.menuItem.priceAgorot)).toEqual([
-      4800, 5600, 7600, 9200,
+      4500,
     ])
+    expect(body.results[0]?.orderable).toBe(false)
+    expect(body.results[0]?.menuItem.isAvailable).toBe(true)
+    expect(body.results[0]?.restaurant.name).toBe('Falafel HaShuk')
     expect(body.intent).toMatchObject({
       keywords: ['chicken'],
       includeTags: ['spicy'],
       maxPriceAgorot: 4799,
       sort: 'price_asc',
     })
-    expect(body.relaxed).toEqual(['maxPriceAgorot'])
+    expect(body.relaxed).toEqual(['includeTags'])
     expect(body.reply).toBe(
-      'Nothing spicy chicken under ₪47.99, but here are spicy chicken dishes slightly above that.',
+      'Nothing spicy chicken cheaper than ₪48, but here are close alternatives.',
     )
+    expect(body.reply).not.toContain('47.99')
+    expect(body.reply).not.toContain('Chicken schnitzel pita')
     expect(replyOmitsAbsentDishes(body)).toBe(true)
+  })
+
+  it('says nothing is cheaper when every match is already at the floor', async () => {
+    const response = await search([
+      user('tagliatelle'),
+      { role: 'assistant', content: 'Found 1 tagliatelle dish.' },
+      user('cheaper ones?'),
+    ])
+    expect(response.status).toBe(200)
+    const body = response.body as SearchBody
+
+    expect(body.results).toEqual([])
+    expect(body.relaxed).toEqual([])
+    expect(body.intent).toMatchObject({
+      keywords: ['tagliatelle'],
+      maxPriceAgorot: 11999,
+      sort: 'price_asc',
+    })
+    expect(body.reply).toBe(
+      'Nothing tagliatelle cheaper than ₪120. Those were the cheapest.',
+    )
   })
 
   it('says so when nothing matches, without naming a real dish', async () => {

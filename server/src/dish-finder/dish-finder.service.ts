@@ -56,13 +56,17 @@ export class DishFinderService implements OnModuleInit {
     const context = await this.cheaperContext(messages, rules, now)
     const extracted = await extractor.extract(messages, context)
     const original = withCheaperCeiling(extracted, messages, context)
-    const outcome = await this.firstHit(original, now)
+    const cheaperThanPrevious = ceilingCameFromPrevious(messages, context)
+    const outcome = await this.firstHit(original, now, {
+      keepMaxPrice: cheaperThanPrevious,
+    })
     return {
       reply: composeReply({
         original,
         results: outcome.results,
         relaxed: outcome.relaxed,
         lastUserText: lastUserText(messages),
+        cheaperThanPrevious,
       }),
       results: outcome.results,
       intent: original,
@@ -112,16 +116,18 @@ export class DishFinderService implements OnModuleInit {
   private async firstHit (
     original: SearchIntent,
     now: Date,
+    options: { keepMaxPrice?: boolean } = {},
   ): Promise<{ results: DishResult[]; relaxed: string[] }> {
     let last: { results: DishResult[]; relaxed: string[] } = {
       results: [],
       relaxed: [],
     }
-    for (const step of relaxationSteps(original)) {
+    for (const step of relaxationSteps(original, options)) {
       const results = await this.searchRepo.search(step.intent, now)
+      if (results.length > 0) return { results, relaxed: step.relaxed }
       last = { results, relaxed: step.relaxed }
-      if (results.length > 0) return last
     }
+    if (options.keepMaxPrice) return { results: [], relaxed: [] }
     return last
   }
 
@@ -143,6 +149,15 @@ function keyFor (
   openaiApiKey: string | undefined,
 ): string | undefined {
   return provider === 'anthropic' ? anthropicApiKey : openaiApiKey
+}
+
+function ceilingCameFromPrevious (
+  messages: readonly ChatMessage[],
+  context: ExtractContext,
+): boolean {
+  const last = lastUserMessage(messages)
+  if (!last || !userMessageAsksForCheaper(last.content)) return false
+  return context.previousCheapestAgorot != null
 }
 
 function withCheaperCeiling (
