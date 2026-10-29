@@ -35,9 +35,20 @@ class _EmptyCart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Center(
-      key: Key('cart_empty'),
-      child: Text('Your cart is empty'),
+    return Center(
+      key: const Key('cart_empty'),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          const Text('Your cart is empty'),
+          const SizedBox(height: 12),
+          FilledButton(
+            key: const Key('cart_browse_restaurants'),
+            onPressed: () => context.go('/restaurants'),
+            child: const Text('Browse restaurants'),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -50,10 +61,15 @@ class _CartBody extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final submitting = checkout is CheckoutSubmitting;
+    final status = checkout;
+    final submitting = status is CheckoutSubmitting;
     final canPlace = cart.meetsMinimum && !submitting;
     final theme = Theme.of(context);
     final restaurant = cart.restaurant!;
+    final unavailable = switch (status) {
+      CheckoutFailed(:final unavailableMenuItemIds) => unavailableMenuItemIds,
+      _ => const <String>[],
+    };
 
     return ListView(
       padding: const EdgeInsets.all(16),
@@ -65,7 +81,11 @@ class _CartBody extends ConsumerWidget {
         ),
         const SizedBox(height: 12),
         for (final line in cart.lines)
-          _CartLineTile(line: line, enabled: !submitting),
+          _CartLineTile(
+            line: line,
+            enabled: !submitting,
+            unavailable: unavailable.contains(line.item.id),
+          ),
         const Divider(),
         _MoneyRow(
           label: 'Subtotal',
@@ -96,6 +116,37 @@ class _CartBody extends ConsumerWidget {
               ),
             ),
           ),
+        ],
+        if (status case CheckoutFailed(
+          :final message,
+          :final unavailableMenuItemIds,
+        )) ...[
+          const SizedBox(height: 12),
+          Text(message, key: const Key('cart_checkout_error')),
+          if (status.canRetry)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                key: const Key('cart_checkout_retry'),
+                onPressed: () =>
+                    unawaited(ref.read(checkoutProvider.notifier).place()),
+                child: const Text('Retry'),
+              ),
+            ),
+          if (unavailableMenuItemIds.isNotEmpty)
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton(
+                key: const Key('cart_remove_unavailable'),
+                onPressed: () {
+                  final notifier = ref.read(cartProvider.notifier);
+                  for (final id in unavailableMenuItemIds) {
+                    notifier.remove(id);
+                  }
+                },
+                child: const Text('Remove unavailable items'),
+              ),
+            ),
         ],
         const SizedBox(height: 16),
         FilledButton(
@@ -144,10 +195,15 @@ class _MoneyRow extends StatelessWidget {
 }
 
 class _CartLineTile extends ConsumerWidget {
-  const _CartLineTile({required this.line, required this.enabled});
+  const _CartLineTile({
+    required this.line,
+    required this.enabled,
+    required this.unavailable,
+  });
 
   final CartLine line;
   final bool enabled;
+  final bool unavailable;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -164,6 +220,8 @@ class _CartLineTile extends ConsumerWidget {
               children: [
                 Text(line.item.name),
                 Text(formatAgorot(line.item.priceAgorot)),
+                if (unavailable)
+                  Text('Unavailable', key: Key('cart_line_unavailable_$id')),
               ],
             ),
           ),

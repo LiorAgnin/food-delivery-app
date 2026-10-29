@@ -13,20 +13,7 @@ import 'package:food_delivery/domain/failures/api_error.dart';
 import '../support/fake_orders_repository.dart';
 import '../support/fixtures.dart';
 import '../support/memory_session_store.dart';
-
-final class QueuedIdempotencyKeys implements IdempotencyKeys {
-  QueuedIdempotencyKeys(this._keys);
-
-  final List<String> _keys;
-  var _index = 0;
-
-  @override
-  String next() {
-    final key = _keys[_index];
-    _index += 1;
-    return key;
-  }
-}
+import '../support/queued_idempotency_keys.dart';
 
 void main() {
   test('a network failure retries with the same idempotency key', () async {
