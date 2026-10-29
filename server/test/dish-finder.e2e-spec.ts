@@ -299,7 +299,7 @@ describe('dish finder', () => {
     })
     expect(body.relaxed).toEqual(['includeTags'])
     expect(body.reply).toBe(
-      'Nothing spicy chicken cheaper than ₪48, but here are close alternatives.',
+      'No spicy chicken dishes cheaper than ₪48, but here are close alternatives.',
     )
     expect(body.reply).not.toContain('47.99')
     expect(body.reply).not.toContain('Chicken schnitzel pita')
@@ -323,7 +323,7 @@ describe('dish finder', () => {
       sort: 'price_asc',
     })
     expect(body.reply).toBe(
-      'Nothing tagliatelle cheaper than ₪120. Those were the cheapest.',
+      'No tagliatelle dishes cheaper than ₪120. Those were the cheapest.',
     )
   })
 

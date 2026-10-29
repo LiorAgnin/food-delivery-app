@@ -166,7 +166,7 @@ describe('composeReply', () => {
     })
 
     expect(reply).toBe(
-      'Nothing spicy chicken cheaper than ₪48, but here are close alternatives.',
+      'No spicy chicken dishes cheaper than ₪48, but here are close alternatives.',
     )
     expect(reply).not.toContain('47.99')
     expect(reply).not.toContain('45')
@@ -187,7 +187,7 @@ describe('composeReply', () => {
     })
 
     expect(reply).toBe(
-      'Nothing spicy chicken cheaper than ₪48. Those were the cheapest.',
+      'No spicy chicken dishes cheaper than ₪48. Those were the cheapest.',
     )
     expect(reply).not.toContain('47.99')
   })
