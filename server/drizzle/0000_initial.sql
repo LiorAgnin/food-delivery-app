@@ -11,7 +11,8 @@ CREATE TABLE "menu_categories" (
 	"restaurant_id" uuid NOT NULL,
 	"name" text NOT NULL,
 	"sort_order" integer NOT NULL,
-	CONSTRAINT "menu_categories_restaurant_name_uq" UNIQUE("restaurant_id","name")
+	CONSTRAINT "menu_categories_restaurant_name_uq" UNIQUE("restaurant_id","name"),
+	CONSTRAINT "menu_categories_id_restaurant_uq" UNIQUE("id","restaurant_id")
 );
 --> statement-breakpoint
 CREATE TABLE "menu_items" (
@@ -71,6 +72,7 @@ CREATE TABLE "orders" (
 	"total_agorot" integer NOT NULL,
 	"restaurant_name" text NOT NULL,
 	"idempotency_key" text NOT NULL,
+	"idempotency_body_hash" text NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
 	CONSTRAINT "orders_customer_idempotency_uq" UNIQUE("customer_id","idempotency_key"),
@@ -106,7 +108,7 @@ CREATE TABLE "restaurants" (
 --> statement-breakpoint
 ALTER TABLE "menu_categories" ADD CONSTRAINT "menu_categories_restaurant_id_restaurants_id_fk" FOREIGN KEY ("restaurant_id") REFERENCES "public"."restaurants"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "menu_items" ADD CONSTRAINT "menu_items_restaurant_id_restaurants_id_fk" FOREIGN KEY ("restaurant_id") REFERENCES "public"."restaurants"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "menu_items" ADD CONSTRAINT "menu_items_category_id_menu_categories_id_fk" FOREIGN KEY ("category_id") REFERENCES "public"."menu_categories"("id") ON DELETE restrict ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "menu_items" ADD CONSTRAINT "menu_items_category_restaurant_fk" FOREIGN KEY ("category_id","restaurant_id") REFERENCES "public"."menu_categories"("id","restaurant_id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "opening_hours" ADD CONSTRAINT "opening_hours_restaurant_id_restaurants_id_fk" FOREIGN KEY ("restaurant_id") REFERENCES "public"."restaurants"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_order_id_orders_id_fk" FOREIGN KEY ("order_id") REFERENCES "public"."orders"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "order_items" ADD CONSTRAINT "order_items_menu_item_id_menu_items_id_fk" FOREIGN KEY ("menu_item_id") REFERENCES "public"."menu_items"("id") ON DELETE set null ON UPDATE no action;--> statement-breakpoint

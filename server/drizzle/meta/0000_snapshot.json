@@ -1,5 +1,5 @@
 {
-  "id": "478faf1d-e553-4339-99d6-e0308803d2f3",
+  "id": "fd481a7c-ac06-4d28-b343-1ca945e58e4c",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -99,6 +99,14 @@
           "columns": [
             "restaurant_id",
             "name"
+          ]
+        },
+        "menu_categories_id_restaurant_uq": {
+          "name": "menu_categories_id_restaurant_uq",
+          "nullsNotDistinct": false,
+          "columns": [
+            "id",
+            "restaurant_id"
           ]
         }
       },
@@ -244,17 +252,19 @@
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
-        "menu_items_category_id_menu_categories_id_fk": {
-          "name": "menu_items_category_id_menu_categories_id_fk",
+        "menu_items_category_restaurant_fk": {
+          "name": "menu_items_category_restaurant_fk",
           "tableFrom": "menu_items",
           "tableTo": "menu_categories",
           "columnsFrom": [
-            "category_id"
+            "category_id",
+            "restaurant_id"
           ],
           "columnsTo": [
-            "id"
+            "id",
+            "restaurant_id"
           ],
-          "onDelete": "restrict",
+          "onDelete": "no action",
           "onUpdate": "no action"
         }
       },
@@ -600,6 +610,12 @@
         },
         "idempotency_key": {
           "name": "idempotency_key",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "idempotency_body_hash": {
+          "name": "idempotency_body_hash",
           "type": "text",
           "primaryKey": false,
           "notNull": true

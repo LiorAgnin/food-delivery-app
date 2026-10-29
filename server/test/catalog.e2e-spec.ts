@@ -1,5 +1,7 @@
 import type { INestApplication } from '@nestjs/common'
 import request from 'supertest'
+import { DRIZZLE, type Database } from '../src/db/database.module'
+import { menuItems } from '../src/db/schema'
 import { createTestApp, destroyTestApp } from './setup'
 
 type OpeningHour = { dayOfWeek: number; opensAt: string; closesAt: string }
@@ -236,6 +238,35 @@ describe('catalog', () => {
         code: 'VALIDATION_FAILED',
         message: expect.any(String),
         details: {},
+      },
+    })
+  })
+
+  it('rejects a menu item filed under another restaurant category', async () => {
+    const list = await request(app.getHttpServer())
+      .get('/api/restaurants')
+      .expect(200)
+    const restaurants = list.body.restaurants as Restaurant[]
+    const alei = restaurants.find((restaurant) => restaurant.name === 'Alei Gefen')
+    const trattoria = restaurants.find(
+      (restaurant) => restaurant.name === 'Trattoria HaYarkon',
+    )
+    const categoryId = (await menuOf(app, trattoria?.id))[0]?.id
+    expect(alei?.id).toEqual(expect.any(String))
+    expect(categoryId).toEqual(expect.any(String))
+
+    const db = app.get<Database>(DRIZZLE)
+    await expect(
+      db.insert(menuItems).values({
+        restaurantId: alei?.id ?? '',
+        categoryId: categoryId ?? '',
+        name: 'Misfiled salad',
+        priceAgorot: 1000,
+      }),
+    ).rejects.toMatchObject({
+      cause: {
+        code: '23503',
+        constraint: 'menu_items_category_restaurant_fk',
       },
     })
   })

@@ -3,6 +3,7 @@ import {
   bigserial,
   boolean,
   check,
+  foreignKey,
   index,
   integer,
   pgEnum,
@@ -138,6 +139,7 @@ export const menuCategories = pgTable(
       table.restaurantId,
       table.name,
     ),
+    unique('menu_categories_id_restaurant_uq').on(table.id, table.restaurantId),
   ],
 )
 
@@ -148,9 +150,7 @@ export const menuItems = pgTable(
     restaurantId: uuid('restaurant_id')
       .notNull()
       .references(() => restaurants.id, { onDelete: 'cascade' }),
-    categoryId: uuid('category_id')
-      .notNull()
-      .references(() => menuCategories.id, { onDelete: 'restrict' }),
+    categoryId: uuid('category_id').notNull(),
     name: text('name').notNull(),
     description: text('description').notNull().default(''),
     priceAgorot: integer('price_agorot').notNull(),
@@ -163,6 +163,13 @@ export const menuItems = pgTable(
     updatedAt: updatedAt(),
   },
   (table) => [
+    // NO ACTION so a restaurant delete can cascade items and categories in one
+    // statement. RESTRICT would reject that delete if categories went first.
+    foreignKey({
+      name: 'menu_items_category_restaurant_fk',
+      columns: [table.categoryId, table.restaurantId],
+      foreignColumns: [menuCategories.id, menuCategories.restaurantId],
+    }).onDelete('no action'),
     check('menu_items_price_positive', sql`${table.priceAgorot} > 0`),
     check(
       'menu_items_dietary_tags_known',
@@ -196,6 +203,7 @@ export const orders = pgTable(
     totalAgorot: integer('total_agorot').notNull(),
     restaurantName: text('restaurant_name').notNull(),
     idempotencyKey: text('idempotency_key').notNull(),
+    idempotencyBodyHash: text('idempotency_body_hash').notNull(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },
