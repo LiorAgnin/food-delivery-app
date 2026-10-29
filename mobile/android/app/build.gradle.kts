@@ -6,7 +6,7 @@ plugins {
 
 // Patrol stub native lib for the androidTest APK (Android 16).
 // One exported symbol, built per ABI with the NDK clang that AGP already
-// resolves, so the artifact is reproducible from source. Mirrors ferrule.
+// resolves, so the stub .so is reproducible from the committed C source.
 val patrolAbiStubTargets = mapOf(
     "arm64-v8a" to "aarch64-linux-android",
     "armeabi-v7a" to "armv7a-linux-androideabi",
@@ -73,7 +73,7 @@ android {
         // flag during build.
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        // Patrol Android setup, same runner ferrule uses.
+        // Patrol instrumentation runner. clearPackageData resets app data between tests.
         testInstrumentationRunner = "pl.leancode.patrol.PatrolJUnitRunner"
         testInstrumentationRunnerArguments["clearPackageData"] = "true"
     }
