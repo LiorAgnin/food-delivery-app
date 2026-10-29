@@ -338,7 +338,7 @@ void main() {
     await tester.tap(find.text('View cart'));
     await tester.pumpAndSettle();
 
-    expect(find.text('TODO(owner): cart'), findsOneWidget);
+    expect(find.byKey(const Key('cart_line_skewer')), findsOneWidget);
   });
 
   testWidgets('adding from another restaurant asks to start a new cart', (

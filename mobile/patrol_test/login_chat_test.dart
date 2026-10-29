@@ -9,9 +9,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'support/e2e_app.dart';
 
 /// Seeded HaTachana Grill mains the dish finder returns for the assignment
-/// prompt, then for the follow-up. Prices live in the server seed: schnitzel
-/// 5600 and skewer 4800 are under ₪60; platter 7600 appears only after
-/// "cheaper ones?" relaxes the ceiling.
+/// prompt. Schnitzel 5600 and skewer 4800 are under ₪60; the platter is not
+/// among them. "cheaper ones?" drops the spicy tag (`relaxed: ['includeTags']`)
+/// and returns only Chicken schnitzel pita, not the platter.
 const _underSixty = ['Spicy chicken schnitzel', 'Spicy chicken skewer'];
 
 void main() {
@@ -64,8 +64,10 @@ void main() {
 
       await $(#chat_reply_1)
           .waitUntilVisible(timeout: const Duration(seconds: 30));
-      await $('Spicy chicken platter').scrollTo();
-      expect(find.text('Spicy chicken platter'), findsOneWidget);
+      await $('Chicken schnitzel pita')
+          .waitUntilVisible(timeout: const Duration(seconds: 30));
+      expect(find.text('Chicken schnitzel pita'), findsOneWidget);
+      expect(find.text('Spicy chicken platter'), findsNothing);
       expect(find.text('Close matches'), findsOneWidget);
     },
   );
