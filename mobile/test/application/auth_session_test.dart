@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -89,5 +90,46 @@ void main() {
     await container.read(authSessionProvider.notifier).signOut();
     expect(container.read(authSessionProvider), isA<SignedOut>());
     expect(prefs.getString(PrefsSessionStore.storageKey), isNull);
+  });
+
+  test('a stale 401 keeps the newer sign-in', () async {
+    final started = Completer<void>();
+    final response = Completer<http.Response>();
+    final headers = <String?>[];
+    final httpClient = MockClient((request) async {
+      headers.add(request.headers['authorization']);
+      if (!started.isCompleted) started.complete();
+      return response.future;
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    final container = ProviderContainer(
+      overrides: [
+        sessionStoreProvider.overrideWithValue(PrefsSessionStore(prefs)),
+        ...dataPlaneBindings(
+          httpClient: httpClient,
+          baseUrl: 'http://localhost:3000/api',
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    await container
+        .read(authSessionProvider.notifier)
+        .signIn(accessToken: 'old', customer: signedIn.customer);
+
+    final pending = container.read(catalogRepositoryProvider).listRestaurants();
+    await started.future;
+
+    await container
+        .read(authSessionProvider.notifier)
+        .signIn(accessToken: 'fresh', customer: signedIn.customer);
+    response.complete(http.Response('nope', 401));
+    await pending;
+
+    expect(headers, ['Bearer old']);
+    final session = container.read(authSessionProvider);
+    expect(session, isA<SignedIn>());
+    expect((session as SignedIn).accessToken, 'fresh');
   });
 }

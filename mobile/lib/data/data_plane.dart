@@ -28,8 +28,10 @@ List<Override> dataPlaneBindings({http.Client? httpClient, String? baseUrl}) {
             SignedOut() => null,
           };
         },
-        onUnauthorized: () {
-          return ref.read(authSessionProvider.notifier).clearOnUnauthorized();
+        onUnauthorized: (sentToken) {
+          return ref
+              .read(authSessionProvider.notifier)
+              .clearOnUnauthorized(sentToken);
         },
       );
     }),
