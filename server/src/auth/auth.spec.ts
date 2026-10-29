@@ -58,6 +58,19 @@ describe('auth plumbing', () => {
     }
   })
 
+  it('rejects an expired token', () => {
+    const token = jwt.sign({ sub: 'customer-1' }, { expiresIn: -10 })
+    const request: RequestWithCustomer = {
+      headers: { authorization: `Bearer ${token}` },
+    }
+    expect(() => guard.canActivate(contextFor(request))).toThrow(DomainError)
+    try {
+      guard.canActivate(contextFor(request))
+    } catch (error) {
+      expect(error).toMatchObject({ code: 'UNAUTHORIZED', status: 401 })
+    }
+  })
+
   it('rejects a token signed with another secret', () => {
     const token = new TokenService(jwtWith('other-secret')).sign('customer-1')
     const request: RequestWithCustomer = {
