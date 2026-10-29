@@ -161,6 +161,30 @@ describe('otp auth', () => {
       .send({ phone })
       .expect(429)
     expect(blocked.body.error.code).toBe('OTP_TOO_MANY_ATTEMPTS')
+
+    app.get(Clock).advance(10 * 60 * 1000)
+    await http.post('/api/auth/otp/request').send({ phone }).expect(202)
+  })
+
+  it('accepts the new code after five wrong tries on the previous one', async () => {
+    const phone = '+972501110009'
+    const http = request(app.getHttpServer())
+    await http.post('/api/auth/otp/request').send({ phone }).expect(202)
+
+    for (let attempt = 0; attempt < 5; attempt += 1) {
+      const wrong = await http
+        .post('/api/auth/otp/verify')
+        .send({ phone, code: '000000' })
+        .expect(401)
+      expect(wrong.body.error.code).toBe('OTP_INVALID')
+    }
+
+    await http.post('/api/auth/otp/request').send({ phone }).expect(202)
+    const verified = await http
+      .post('/api/auth/otp/verify')
+      .send({ phone, code: '123456' })
+      .expect(200)
+    expect(verified.body.customer.phone).toBe(phone)
   })
 
   it('accepts exactly three of ten parallel code requests for one phone', async () => {
