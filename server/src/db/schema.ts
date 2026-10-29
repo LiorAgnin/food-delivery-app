@@ -196,6 +196,7 @@ export const orders = pgTable(
     totalAgorot: integer('total_agorot').notNull(),
     restaurantName: text('restaurant_name').notNull(),
     idempotencyKey: text('idempotency_key').notNull(),
+    idempotencyBodyHash: text('idempotency_body_hash').notNull(),
     createdAt: createdAt(),
     updatedAt: updatedAt(),
   },

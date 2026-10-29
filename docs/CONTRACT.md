@@ -44,6 +44,7 @@ orders             id uuid pk, customer_id fk -> customers, restaurant_id fk -> 
                    total_agorot int not null, check (total_agorot = subtotal_agorot + delivery_fee_agorot),
                    restaurant_name text not null,                       -- snapshot
                    idempotency_key text not null, unique (customer_id, idempotency_key),
+                   idempotency_body_hash text not null,                 -- sha256 hex of the normalized body
                    created_at, updated_at
                    index (customer_id, created_at desc)
 order_items        id uuid pk, order_id fk on delete cascade, menu_item_id fk -> menu_items on delete set null,
@@ -132,7 +133,7 @@ Rules, checked in this order inside one transaction:
 4. Subtotal is at least the minimum. Otherwise `BELOW_MINIMUM`, `details: { minOrderAgorot, subtotalAgorot }`.
 5. Prices come from the database, never from the client. Names and prices are snapshotted into `order_items`.
 
-The same `(customer, Idempotency-Key)` with the same body returns the original order with `200`. A different body returns `IDEMPOTENCY_CONFLICT`. A new order returns `201 Order`.
+The same `(customer, Idempotency-Key)` with the same body returns the original order with `200`. A different body returns `IDEMPOTENCY_CONFLICT`. A new order returns `201 Order`. Equality is the sha256 hex of the normalized body: `restaurantId` plus `items` sorted by `menuItemId` (`{ menuItemId, quantity }` only). That digest is `orders.idempotency_body_hash`. UUID strings in the body are compared lowercase.
 
 ### `GET /orders/:id` (auth)
 
