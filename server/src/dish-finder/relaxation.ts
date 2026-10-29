@@ -42,12 +42,18 @@ const DROPS: readonly Drop[] = [
   },
 ]
 
-export function relaxationSteps (intent: SearchIntent): RelaxationStep[] {
+export function relaxationSteps (
+  intent: SearchIntent,
+  options: { keepMaxPrice?: boolean } = {},
+): RelaxationStep[] {
+  const drops = options.keepMaxPrice
+    ? DROPS.filter((drop) => drop.key !== 'maxPriceAgorot')
+    : DROPS
   const steps: RelaxationStep[] = [{ intent: cloneIntent(intent), relaxed: [] }]
   let current = cloneIntent(intent)
   let relaxed: string[] = []
 
-  for (const drop of DROPS) {
+  for (const drop of drops) {
     if (!drop.active(current)) continue
     current = drop.apply(cloneIntent(current))
     relaxed = [...relaxed, drop.key]

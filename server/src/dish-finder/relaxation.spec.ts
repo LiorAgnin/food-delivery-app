@@ -131,6 +131,56 @@ describe('relaxationSteps', () => {
     ])
   })
 
+  it('keeps a cheaper price ceiling and drops the other constraints', () => {
+    const original = intent({
+      keywords: ['chicken'],
+      excludeKeywords: ['soup'],
+      cuisines: ['Israeli'],
+      includeTags: ['spicy'],
+      excludeTags: ['vegan'],
+      maxPriceAgorot: 4799,
+      openNowOnly: true,
+      sort: 'price_asc',
+    })
+
+    expect(relaxationSteps(original, { keepMaxPrice: true })).toEqual([
+      { intent: original, relaxed: [] },
+      {
+        intent: intent({
+          keywords: ['chicken'],
+          cuisines: ['Israeli'],
+          includeTags: ['spicy'],
+          excludeTags: ['vegan'],
+          maxPriceAgorot: 4799,
+          openNowOnly: true,
+          sort: 'price_asc',
+        }),
+        relaxed: ['excludeKeywords'],
+      },
+      {
+        intent: intent({
+          keywords: ['chicken'],
+          cuisines: ['Israeli'],
+          excludeTags: ['vegan'],
+          maxPriceAgorot: 4799,
+          openNowOnly: true,
+          sort: 'price_asc',
+        }),
+        relaxed: ['excludeKeywords', 'includeTags'],
+      },
+      {
+        intent: intent({
+          keywords: ['chicken'],
+          excludeTags: ['vegan'],
+          maxPriceAgorot: 4799,
+          openNowOnly: true,
+          sort: 'price_asc',
+        }),
+        relaxed: ['excludeKeywords', 'includeTags', 'cuisines'],
+      },
+    ])
+  })
+
   it('does not mutate the original intent', () => {
     const original = intent({
       keywords: ['pizza', 'pineapple'],
