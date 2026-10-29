@@ -1,17 +1,15 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/widgets.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-void main() {
-  runApp(const FoodDeliveryApp());
-}
+import 'app/app.dart';
+import 'app/bootstrap.dart';
 
-class FoodDeliveryApp extends StatelessWidget {
-  const FoodDeliveryApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return const MaterialApp(
-      title: 'Food Delivery',
-      home: Scaffold(body: SizedBox.shrink()),
-    );
-  }
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  final boot = bootstrapApp(prefs: prefs);
+  runApp(
+    ProviderScope(overrides: boot.overrides, child: const FoodDeliveryApp()),
+  );
 }
