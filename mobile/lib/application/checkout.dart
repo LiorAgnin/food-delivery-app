@@ -55,13 +55,22 @@ sealed class CheckoutState with _$CheckoutState {
 }
 
 /// One checkout attempt. The idempotency key survives a failed [place] so a
-/// retry of the same cart cannot create a second order.
+/// retry of the same cart cannot create a second order. A cart edit drops
+/// the key: the body changed, and the old key would come back as
+/// `IDEMPOTENCY_CONFLICT`.
 @Riverpod(keepAlive: true)
 class Checkout extends _$Checkout {
   String? _idempotencyKey;
 
   @override
-  CheckoutState build() => const CheckoutState.idle();
+  CheckoutState build() {
+    ref.listen(cartProvider, (previous, next) {
+      if (previous != null && previous != next) {
+        _idempotencyKey = null;
+      }
+    });
+    return const CheckoutState.idle();
+  }
 
   Future<void> place() async {
     final cart = ref.read(cartProvider);

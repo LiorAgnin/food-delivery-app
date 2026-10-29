@@ -71,4 +71,41 @@ void main() {
     expect(container.read(cartProvider).lines, isEmpty);
     expect(container.read(cartProvider).restaurant, isNull);
   });
+
+  test('changing the cart issues a new idempotency key', () async {
+    final orders = FakeOrdersRepository(
+      placeResults: [
+        const ApiFailure(
+          ApiError(code: ApiErrorCode.network, message: 'Network unavailable'),
+        ),
+        ApiOk(sampleOrder(id: 'order-2')),
+      ],
+    );
+    final container = _container(orders, ['key-1', 'key-2']);
+    addTearDown(container.dispose);
+
+    container
+        .read(cartProvider.notifier)
+        .add(
+          sampleItem(id: 'i1', priceAgorot: 4200),
+          sampleRestaurant(minOrderAgorot: 1000),
+        );
+
+    final checkout = container.read(checkoutProvider.notifier);
+    await checkout.place();
+    container.read(cartProvider.notifier).increment('i1');
+    await checkout.place();
+
+    expect(orders.idempotencyKeys, ['key-1', 'key-2']);
+    expect(orders.placedLines[1].single.quantity, 2);
+  });
+}
+
+ProviderContainer _container(FakeOrdersRepository orders, List<String> keys) {
+  return ProviderContainer(
+    overrides: [
+      ordersRepositoryProvider.overrideWithValue(orders),
+      idempotencyKeysProvider.overrideWithValue(QueuedIdempotencyKeys(keys)),
+    ],
+  );
 }
