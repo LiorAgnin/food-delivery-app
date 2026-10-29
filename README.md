@@ -26,7 +26,7 @@ Seed: five restaurants, ten dishes each, in Starters, Mains and Drinks.
 | Trattoria HaYarkon | Italian | ₪49 | ₪15 | `White truffle tagliatelle` is out of stock |
 | Falafel HaShuk | Israeli | ₪30 | ₪8 | closed by its manual switch |
 
-Every restaurant's hours cover all 24 hours, split into two windows, one of which crosses midnight. So Falafel HaShuk is the only closed restaurant at any time of day, and a reviewer at 3am sees the same app as one at noon.
+Every restaurant's hours cover all 24 hours in two windows that meet at midnight. So Falafel HaShuk is the only closed restaurant at any time of day, and a reviewer at 3am sees the same app as one at noon.
 
 Get a token without the app:
 
@@ -64,6 +64,8 @@ Log in with any Israeli mobile number, for example `050-123-4567`. Debug builds 
 | Server e2e | `server/`: `npm run test:e2e`. Needs Docker. Testcontainers starts a throwaway Postgres per run on a random port. |
 | Mobile unit and widget | `mobile/`: `flutter test` |
 | Mobile e2e, Patrol | `mobile/`: `tool/e2e.sh --port 3000 --target patrol_test/catalog_test.dart` against a running `docker compose` stack |
+
+All three Patrol journeys, catalog, checkout, and login with the dish finder chat, pass on a OnePlus 7 Pro running Android 16 against the `docker compose` backend.
 
 Lint and build: `npm run lint && npm run build` in `server/`, `dart format . && flutter analyze` in `mobile/`. Run `dart run build_runner build -d` after changing any freezed, json_serializable or Riverpod source.
 
@@ -140,7 +142,7 @@ All of it is in `server/src/db/schema.ts`. `drizzle-kit generate` turned that in
 
 `POST /orders` checks, in this order inside one transaction: shape, restaurant exists, restaurant open, every item belongs to that restaurant, every item available, subtotal meets the minimum. Prices and names come from the database. Then it inserts the order, its items and the PLACED event. A replay with the same `Idempotency-Key` and body returns the original order with 200. Two concurrent creates with one key race on the unique constraint. The loser catches the violation, rolls back, reads the winner, and returns it if the body hash matches. The idempotency lookup runs before the open-now check, so a retry that arrives after the restaurant closes still returns the order that was placed.
 
-Another customer's order returns a 404 byte-identical to an unknown id, so order ids don't leak.
+`GET /orders/:id` looks the order up by id and customer in one query. Another customer's order and an id that doesn't exist both end in the same `NOT_FOUND` error with the same body, so the response can't confirm that someone else's order exists.
 
 The status endpoint has no auth, per the contract. It stands in for the restaurant and courier integrations.
 
@@ -158,9 +160,9 @@ Unavailable dishes and closed restaurants are included, marked `orderable: false
 
 If nothing matches, the server relaxes one constraint at a time in a fixed order: price ceiling, excluded words, required tags, cuisine, then narrowing to the longest keyword. It stops at the first step that returns rows and reports what it dropped in `relaxed`. The app labels those results "Close matches".
 
-"Cheaper ones?" sorts by price and sets the ceiling one agora under the cheapest dish from the previous turn. On that turn the price ceiling is never relaxed, because returning a pricier dish to "cheaper ones?" is wrong. If nothing cheaper exists, the reply says those were the cheapest.
+"Cheaper ones?" sorts by price and sets the ceiling one agora under the cheapest dish from the previous turn. On that turn the price ceiling is never relaxed, because returning a pricier dish to "cheaper ones?" is wrong. The other constraints still relax, and the reply says so: "No spicy chicken dishes cheaper than ₪48, but here are close alternatives." If nothing at all is under the ceiling, the reply ends with "Those were the cheapest."
 
-The reply is a template built from the result rows: a count and the restated filters, like "Found 2 spicy chicken dishes under ₪60." It never names a dish. Results only ever come from the SQL query, and the model only produces search parameters, so the bot has no path to invent a dish, a price or a restaurant.
+The reply is a template built from the result rows: a count and the restated filters, like "Found 2 spicy chicken dishes under ₪60." A full page of 10 reads "Here are 10 vegan dishes.", because 10 is the cap, not the total. It never names a dish. Results only ever come from the SQL query, and the model only produces search parameters, so the bot has no path to invent a dish, a price or a restaurant.
 
 I picked intent extraction over letting a model answer from a menu dump because the dump can hallucinate, costs tokens per turn, and grows with the catalog. Embeddings are overkill for 50 dishes.
 
@@ -188,7 +190,7 @@ I picked intent extraction over letting a model answer from a menu dump because 
 - The server accepts any E.164 phone. The app normalizes Israeli formats like `050-123-4567` and `+972 50 123 4567` before sending.
 - OTP: codes expire after 5 minutes, a challenge allows 5 verify attempts, and a phone can request 3 codes per 10 minutes. A successful verify consumes every outstanding challenge for that phone.
 - The status endpoint trusts the `actor` in the body. That's acceptable only because it stands in for authenticated integrations.
-- Order status is polled every 3 seconds while the screen is open. Polling stops at a terminal status or when the screen closes.
+- Order status is polled every 3 seconds while the screen is open. A tick is skipped while the previous poll is still in flight, so a slow response can't paint an older status. Polling stops at a terminal status or when the screen closes.
 
 ## Edge cases handled
 
@@ -198,10 +200,10 @@ I picked intent extraction over letting a model answer from a menu dump because 
 - **Price tampering.** Unknown body fields are rejected. Prices always come from the database.
 - **Menu changes after ordering.** Names and prices are snapshotted, so the order screen shows what was bought at the price paid.
 - **Double tap and flaky networks.** A second tap while submitting is ignored. A retry after a network error or timeout reuses the idempotency key and gets the same order back.
-- **Concurrent status updates.** Exactly one wins. The other gets `CONCURRENT_UPDATE` or `INVALID_TRANSITION`, depending on whether it read before or after the winner committed. Verified with 40 racing pairs over HTTP.
+- **Concurrent status updates.** Exactly one wins. The other gets `CONCURRENT_UPDATE` or `INVALID_TRANSITION`, depending on whether it read before or after the winner committed. An e2e test races two PATCHes and asserts exactly one wins.
 - **Opening hours across midnight and time zones.** `isOpenNow` checks yesterday's overnight window and computes local time from the restaurant's timezone, DST included.
 - **OTP abuse.** Wrong codes count toward the attempt cap. The request rate limit takes `pg_advisory_xact_lock(hashtext(phone))` first, so a parallel burst can't slip past the count. Codes are compared with `timingSafeEqual`.
-- **Malformed or oversized bodies** return `400 VALIDATION_FAILED`, never `500`.
+- **Malformed or oversized bodies** return `400 VALIDATION_FAILED`, never `500`. Broken JSON gets the message "Malformed JSON body" instead of the parser's internals.
 - **Expired or revoked session.** A 401 clears the stored session and the router returns to login. A late 401 for a token that was already replaced is ignored, so it can't sign out the new session.
 - **Token for a deleted customer.** After `docker compose down -v`, an old JWT still verifies, but `POST /orders` returns 401 instead of a foreign-key 500.
 - **Uppercase UUIDs.** The order DTO lowercases `restaurantId` and `menuItemId`, so the item lookup and the idempotency hash agree.
@@ -229,11 +231,10 @@ Server:
 - The dish finder matches keywords with `ILIKE`, so the GIN `tsvector` index in the migration is unused. With 50 dishes a sequential scan is fine.
 - Cuisines are loaded once at boot. A new cuisine needs a restart before the parser knows it.
 - The model path has only been tested with a fake `fetch`. Compose ships without an API key.
-- The concurrent-PATCH e2e fails about 1 run in 100. It expects the loser to get `CONCURRENT_UPDATE`, but a loser that reads after the winner commits correctly gets `INVALID_TRANSITION`. The server behaves right. The test is too strict.
 - The snapshot e2e changes a dish's price after ordering but not its name, so serving live names instead of snapshotted ones would pass it.
 - `Clock.advance()` is on the production clock class, because the auth e2e uses it to step past OTP expiry.
 - An invalid timezone in a restaurant row would make the whole list return 500. Nothing writes restaurants today.
-- `npm audit` reports 3 high-severity advisories in dev dependencies. Fixing them means a major Nest upgrade.
+- `npm audit` reports 3 high-severity advisories, all in runtime dependencies: `multer` through `@nestjs/platform-express`, and `zod`. The fixes are Nest 12 and zod 4, both major upgrades. No route accepts file uploads, so multer never runs. Zod parses only the env at boot and the model's reply.
 - The foundation code was written before I switched to test-first. Its tests came after, and each was proven by breaking the code and watching it fail.
 
 Mobile:
@@ -243,9 +244,8 @@ Mobile:
 - A fractional price on the wire is truncated instead of rejected.
 - The cart accepts more than the server's 50 lines, keeps the first price it saw when an item is re-added, and survives sign-out.
 - Order status times show in UTC.
-- `patrol_test/login_chat_test.dart` has not been run against the final backend. Its "cheaper ones?" step was written before the rule that keeps the price ceiling on a cheaper turn.
 - The mobile cart, orders, login and chat code had no independent review before the deadline.
 
 ## Time spent
 
-About 3 hours, from the first commit at 12:17 to the last at TODO(end).
+About 3 hours, from the first commit at 12:17 to the last at 15:05.
