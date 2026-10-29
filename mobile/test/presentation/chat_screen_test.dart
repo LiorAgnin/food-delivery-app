@@ -341,6 +341,41 @@ void main() {
     expect(find.byKey(const Key('cart_line_skewer')), findsOneWidget);
   });
 
+  testWidgets('the added-to-cart snackbar dismisses itself', (tester) async {
+    final skewer = dish(
+      id: 'skewer',
+      name: 'Spicy chicken skewer',
+      priceAgorot: 4800,
+      orderable: true,
+    );
+    final grill = sampleRestaurant(id: 'grill', name: 'HaTachana Grill');
+    final finder = FakeDishFinderRepository(
+      script: [
+        ApiOk(sampleReply(reply: 'One match.', results: [skewer])),
+      ],
+    );
+    final catalog = FakeCatalogRepository(
+      menu: ApiOk(sampleMenu(restaurant: grill, items: [skewer.menuItem])),
+    );
+
+    await openChat(tester, finder: finder, catalog: catalog);
+    await tester.tap(find.byKey(const Key('chat_suggestion_1')));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.byKey(const Key('dish_add_skewer')));
+    await tester.tap(find.byKey(const Key('dish_add_skewer')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 750));
+
+    expect(find.text('Added to cart'), findsOneWidget);
+
+    // Entrance finished above. Display is 4s, then the exit animation.
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pump(const Duration(milliseconds: 750));
+
+    expect(find.text('Added to cart'), findsNothing);
+  });
+
   testWidgets('adding from another restaurant asks to start a new cart', (
     tester,
   ) async {

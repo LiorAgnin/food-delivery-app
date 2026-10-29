@@ -404,6 +404,9 @@ void _showAdded(BuildContext context) {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
       content: const Text('Added to cart'),
+      // An action makes persist default to true, so the bar would cover
+      // the composer until the action is tapped.
+      persist: false,
       action: SnackBarAction(
         label: 'View cart',
         onPressed: () => context.push('/cart'),
