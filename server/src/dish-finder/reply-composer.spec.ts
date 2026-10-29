@@ -118,6 +118,65 @@ describe('composeReply', () => {
     )
   })
 
+  it('phrases a cheaper ceiling as cheaper than the previous price', () => {
+    const reply = composeReply({
+      original: intent({
+        keywords: ['chicken'],
+        includeTags: ['spicy'],
+        maxPriceAgorot: 4799,
+        sort: 'price_asc',
+      }),
+      results: [dish('Chicken schnitzel pita', { priceAgorot: 4500 })],
+      relaxed: ['includeTags'],
+      lastUserText: 'cheaper ones?',
+      cheaperThanPrevious: true,
+    })
+
+    expect(reply).toBe(
+      'Nothing spicy chicken cheaper than ₪48, but here are close alternatives.',
+    )
+    expect(reply).not.toContain('47.99')
+    expect(reply).not.toContain('45')
+  })
+
+  it('says there is nothing cheaper when a cheaper turn matches nothing', () => {
+    const reply = composeReply({
+      original: intent({
+        keywords: ['chicken'],
+        includeTags: ['spicy'],
+        maxPriceAgorot: 4799,
+        sort: 'price_asc',
+      }),
+      results: [],
+      relaxed: [],
+      lastUserText: 'cheaper ones?',
+      cheaperThanPrevious: true,
+    })
+
+    expect(reply).toBe(
+      'Nothing spicy chicken cheaper than ₪48. Those were the cheapest.',
+    )
+    expect(reply).not.toContain('47.99')
+  })
+
+  it('counts an exact cheaper match without saying under', () => {
+    const reply = composeReply({
+      original: intent({
+        keywords: ['soup'],
+        maxPriceAgorot: 2599,
+        sort: 'price_asc',
+      }),
+      results: [dish('Lentil soup', { priceAgorot: 2200 })],
+      relaxed: [],
+      lastUserText: 'cheaper ones?',
+      cheaperThanPrevious: true,
+    })
+
+    expect(reply).toBe('Found 1 soup dish cheaper than ₪26.')
+    expect(reply).not.toContain('25.99')
+    expect(reply).not.toContain('22')
+  })
+
   it('offers close alternatives when a non-price constraint was dropped', () => {
     const reply = composeReply({
       original: intent({

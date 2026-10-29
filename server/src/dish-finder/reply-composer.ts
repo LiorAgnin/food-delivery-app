@@ -20,14 +20,32 @@ export function composeReply (input: {
   results: readonly ReplyResult[]
   relaxed: readonly string[]
   lastUserText: string
+  cheaperThanPrevious?: boolean
 }): string {
-  const { original, results, relaxed, lastUserText } = input
+  const {
+    original,
+    results,
+    relaxed,
+    lastUserText,
+    cheaperThanPrevious = false,
+  } = input
   if (results.length === 0) {
+    if (cheaperThanPrevious && original.maxPriceAgorot != null) {
+      const filters = describeFilters(original)
+      const asked = filters.length > 0 ? `${filters} ` : ''
+      return `Nothing ${asked}cheaper than ${cheaperThanShekels(original.maxPriceAgorot)}. Those were the cheapest.`
+    }
     const quoted = lastUserText.replaceAll("'", '')
     return `I couldn't find anything matching '${quoted}'. Try a cuisine or an ingredient.`
   }
 
   const stock = stockSentence(results)
+  if (cheaperThanPrevious && original.maxPriceAgorot != null && relaxed.length > 0) {
+    const filters = describeFilters(original)
+    const asked = filters.length > 0 ? `${filters} ` : ''
+    return `Nothing ${asked}cheaper than ${cheaperThanShekels(original.maxPriceAgorot)}, but here are close alternatives.${stock}`
+  }
+
   if (relaxed.length === 1 && relaxed[0] === 'maxPriceAgorot') {
     const filters = describeFilters(original)
     const ceiling =
@@ -48,6 +66,10 @@ export function composeReply (input: {
   const filters = describeFilters(original)
   const noun = filters.length > 0 ? `${filters} ` : ''
   const dishWord = results.length === 1 ? 'dish' : 'dishes'
+  if (cheaperThanPrevious && original.maxPriceAgorot != null) {
+    const ceiling = cheaperThanShekels(original.maxPriceAgorot)
+    return `Found ${results.length} ${noun}${dishWord} cheaper than ${ceiling}.${stock}`
+  }
   const ceiling =
     original.maxPriceAgorot == null
       ? ''
@@ -60,6 +82,12 @@ function describeFilters (intent: SearchIntent): string {
     ...intent.includeTags.map((tag) => TAG_LABEL[tag]),
     ...intent.keywords,
   ].join(' ')
+}
+
+function cheaperThanShekels (maxPriceAgorot: number): string {
+  // The ceiling is one agora under the previous cheapest dish.
+  // Name that dish's price ("cheaper than ₪48"), not the agora ceiling.
+  return formatShekels(maxPriceAgorot + 1)
 }
 
 function formatShekels (agorot: number): string {
