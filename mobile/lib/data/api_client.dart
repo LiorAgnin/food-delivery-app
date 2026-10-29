@@ -26,7 +26,7 @@ final class ApiClient {
   final String baseUrl;
   final Duration timeout;
   final String? Function() readToken;
-  final Future<void> Function()? onUnauthorized;
+  final Future<void> Function(String? sentToken)? onUnauthorized;
 
   Future<ApiResult<T>> get<T>(String path, T Function(Object? json) decode) {
     return _send('GET', path, decode);
@@ -63,8 +63,12 @@ final class ApiClient {
       ...?headers,
     };
     final token = readToken();
+    final String? sentToken;
     if (token != null && token.isNotEmpty) {
       requestHeaders['authorization'] = 'Bearer $token';
+      sentToken = token;
+    } else {
+      sentToken = null;
     }
     Object? encoded;
     if (body != null) {
@@ -90,7 +94,7 @@ final class ApiClient {
       return _fail(ApiErrorCode.unknown, 'Something went wrong');
     }
 
-    return _decodeResponse(response, decode);
+    return _decodeResponse(response, decode, sentToken);
   }
 
   Future<http.Response> _dispatch(
@@ -112,6 +116,7 @@ final class ApiClient {
   Future<ApiResult<T>> _decodeResponse<T>(
     http.Response response,
     T Function(Object? json) decode,
+    String? sentToken,
   ) async {
     final status = response.statusCode;
     final Object? json;
@@ -121,7 +126,7 @@ final class ApiClient {
       }
       json = jsonDecode(response.body);
     } on FormatException {
-      if (status == 401) await onUnauthorized?.call();
+      if (status == 401) await onUnauthorized?.call(sentToken);
       if (status >= 200 && status < 300) {
         return _fail(
           ApiErrorCode.malformed,
@@ -133,9 +138,10 @@ final class ApiClient {
     }
 
     if (status < 200 || status >= 300) {
-      // Any 401 drops the session, including OTP failures: the contract
-      // uses 401 for both a dead access token and a bad code.
-      if (status == 401) await onUnauthorized?.call();
+      // Any 401 notifies the session, including OTP failures: the contract
+      // uses 401 for both a dead access token and a bad code. The session
+      // drops only when [sentToken] is still current.
+      if (status == 401) await onUnauthorized?.call(sentToken);
       return ApiFailure(_envelope(json, status));
     }
 

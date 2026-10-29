@@ -13,7 +13,7 @@ void main() {
   ApiClient client(
     Future<http.Response> Function(http.Request request) handler, {
     String? token = 'token',
-    Future<void> Function()? onUnauthorized,
+    Future<void> Function(String? sentToken)? onUnauthorized,
     Duration timeout = const Duration(seconds: 10),
   }) {
     return ApiClient(
@@ -78,6 +78,22 @@ void main() {
     expect(error.details, {'minOrderAgorot': 5000, 'subtotalAgorot': 1000});
   });
 
+  test('a non-JSON 401 clears the session and stays unknown', () async {
+    var cleared = 0;
+    final api = client(
+      (request) async => http.Response('nope', 401),
+      onUnauthorized: (sentToken) async {
+        expect(sentToken, 'token');
+        cleared += 1;
+      },
+    );
+
+    final error = failure(await api.get('/restaurants', (json) => json));
+    expect(error.code, ApiErrorCode.unknown);
+    expect(error.message, 'HTTP 401');
+    expect(cleared, 1);
+  });
+
   test('a 401 clears the session and keeps the envelope code', () async {
     var cleared = 0;
     final api = client(
@@ -89,7 +105,7 @@ void main() {
           401,
         );
       },
-      onUnauthorized: () async {
+      onUnauthorized: (_) async {
         cleared += 1;
       },
     );

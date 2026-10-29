@@ -24,11 +24,14 @@ class AuthSession extends _$AuthSession {
     state = const SignedOut();
   }
 
-  /// HTTP 401. The in-memory flip happens before disk so a redirect does
-  /// not wait on shared_preferences, and the disk clear is awaited by the
-  /// call that observed the 401.
-  Future<void> clearOnUnauthorized() async {
-    if (state is SignedOut) return;
+  /// HTTP 401 for [sentToken]. Omit the token when the caller does not
+  /// know it. A bearer that is no longer the current session is ignored,
+  /// so a late 401 cannot sign out a newer sign-in. The in-memory flip
+  /// happens before disk so a redirect does not wait on shared_preferences.
+  Future<void> clearOnUnauthorized([String? sentToken]) async {
+    final current = state;
+    if (current is! SignedIn) return;
+    if (sentToken != null && sentToken != current.accessToken) return;
     state = const SignedOut();
     await ref.read(sessionStoreProvider).clear();
   }
