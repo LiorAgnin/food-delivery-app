@@ -143,4 +143,23 @@ describe('otp auth', () => {
       .expect(429)
     expect(blocked.body.error.code).toBe('OTP_TOO_MANY_ATTEMPTS')
   })
+
+  it('accepts exactly three of ten parallel code requests for one phone', async () => {
+    const phone = '+972501110007'
+    const responses = await Promise.all(
+      Array.from({ length: 10 }, () =>
+        request(app.getHttpServer())
+          .post('/api/auth/otp/request')
+          .send({ phone }),
+      ),
+    )
+    const statuses = responses.map((response) => response.status).sort()
+    const blocked = responses.filter((response) => response.status === 429)
+
+    expect(statuses).toEqual([202, 202, 202, 429, 429, 429, 429, 429, 429, 429])
+    expect(blocked).toHaveLength(7)
+    for (const response of blocked) {
+      expect(response.body.error.code).toBe('OTP_TOO_MANY_ATTEMPTS')
+    }
+  })
 })

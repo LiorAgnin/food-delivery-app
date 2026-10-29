@@ -1,5 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common'
-import { and, desc, eq, gte, isNull } from 'drizzle-orm'
+import { and, desc, eq, gte, isNull, sql } from 'drizzle-orm'
 import { DomainError } from '../common/domain-error'
 import { DRIZZLE, type Database } from '../db/database.module'
 import {
@@ -43,6 +43,7 @@ export class OtpService {
 
   async request (phone: string): Promise<OtpRequestBody> {
     const issued = await this.db.transaction(async (tx) => {
+      await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${phone}))`)
       const recent = await tx
         .select({ id: otpChallenges.id })
         .from(otpChallenges)
