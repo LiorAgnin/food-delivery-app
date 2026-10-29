@@ -5,7 +5,7 @@ import { and, eq } from 'drizzle-orm'
 import request from 'supertest'
 import { issueTokenForPhone } from '../src/auth/print-token'
 import { DRIZZLE, type Database } from '../src/db/database.module'
-import { menuItems, orders } from '../src/db/schema'
+import { customers, menuCategories, menuItems, orders } from '../src/db/schema'
 import { createTestApp, destroyTestApp } from './setup'
 
 type Restaurant = {
@@ -133,7 +133,10 @@ describe('orders', () => {
   function postOrder (
     token: string,
     key: string | undefined,
-    body: { restaurantId: string; items: { menuItemId: string; quantity: number }[] },
+    body: {
+      restaurantId: string
+      items: { menuItemId: string; quantity: number }[]
+    },
   ) {
     const call = request(app.getHttpServer())
       .post('/api/orders')
@@ -301,7 +304,10 @@ describe('orders', () => {
 
   it('rejects a closed restaurant, an unavailable item, a foreign item, and a short subtotal', async () => {
     const token = await issueTokenForPhone('+972501110020')
-    const shawarma = itemNamed(await loadMenu(app, falafel.id), 'Shawarma in pita')
+    const shawarma = itemNamed(
+      await loadMenu(app, falafel.id),
+      'Shawarma in pita',
+    )
 
     const closed = await postOrder(token, randomUUID(), {
       restaurantId: falafel.id,
@@ -483,5 +489,85 @@ describe('orders', () => {
         .set({ priceAgorot: 2800, updatedAt: new Date() })
         .where(eq(menuItems.id, fries.id))
     }
+  })
+
+  it('lets a customer cancel a placed order and rejects that cancel after acceptance', async () => {
+    const token = await issueTokenForPhone('+972501110070')
+    const placed = await postOrder(token, randomUUID(), {
+      restaurantId: alei.id,
+      items: [{ menuItemId: burger.id, quantity: 1 }],
+    }).expect(201)
+
+    const cancelled = await request(app.getHttpServer())
+      .patch(`/api/orders/${placed.body.id}/status`)
+      .send({ status: 'CANCELLED', actor: 'customer' })
+      .expect(200)
+    expect(cancelled.body.status).toBe('CANCELLED')
+
+    const accepted = await postOrder(token, randomUUID(), {
+      restaurantId: alei.id,
+      items: [{ menuItemId: burger.id, quantity: 1 }],
+    }).expect(201)
+    await request(app.getHttpServer())
+      .patch(`/api/orders/${accepted.body.id}/status`)
+      .send({ status: 'ACCEPTED', actor: 'restaurant' })
+      .expect(200)
+    const rejected = await request(app.getHttpServer())
+      .patch(`/api/orders/${accepted.body.id}/status`)
+      .send({ status: 'CANCELLED', actor: 'customer' })
+      .expect(409)
+    expect(rejected.body.error.code).toBe('INVALID_TRANSITION')
+    expect(rejected.body.error.details).toEqual({
+      from: 'ACCEPTED',
+      to: 'CANCELLED',
+      actor: 'customer',
+    })
+  })
+
+  it('returns 401 when a valid token belongs to a deleted customer', async () => {
+    const token = await issueTokenForPhone('+972501110080')
+    const customerId = customerIdOf(token)
+    await db.delete(customers).where(eq(customers.id, customerId))
+
+    const response = await postOrder(token, randomUUID(), {
+      restaurantId: alei.id,
+      items: [{ menuItemId: burger.id, quantity: 1 }],
+    }).expect(401)
+    expect(response.body.error.code).toBe('UNAUTHORIZED')
+  })
+
+  it('accepts an uppercase menu item id for an item that is on the menu', async () => {
+    const token = await issueTokenForPhone('+972501110090')
+    const [category] = await db
+      .select({ id: menuCategories.id })
+      .from(menuCategories)
+      .where(eq(menuCategories.restaurantId, alei.id))
+      .limit(1)
+    if (!category) throw new Error('Alei Gefen has no menu category')
+    const menuItemId = 'abcdefab-cdef-4abc-8def-abcdefabcdef'
+    await db.insert(menuItems).values({
+      id: menuItemId,
+      restaurantId: alei.id,
+      categoryId: category.id,
+      name: 'Hex plate',
+      priceAgorot: 4500,
+      dietaryTags: [],
+    })
+
+    const created = await postOrder(token, randomUUID(), {
+      restaurantId: alei.id,
+      items: [{ menuItemId: menuItemId.toUpperCase(), quantity: 1 }],
+    }).expect(201)
+    expect(created.body.items).toEqual([
+      {
+        menuItemId,
+        name: 'Hex plate',
+        unitPriceAgorot: 4500,
+        quantity: 1,
+        lineTotalAgorot: 4500,
+      },
+    ])
+    expect(created.body.subtotalAgorot).toBe(4500)
+    expect(created.body.totalAgorot).toBe(5700)
   })
 })

@@ -1,4 +1,4 @@
-import { Type } from 'class-transformer'
+import { Transform, Type } from 'class-transformer'
 import {
   ArrayMaxSize,
   ArrayMinSize,
@@ -10,6 +10,7 @@ import {
 } from 'class-validator'
 
 export class CreateOrderItemDto {
+  @Transform(lowercaseUuid)
   @IsUUID('4')
   menuItemId!: string
 
@@ -20,6 +21,7 @@ export class CreateOrderItemDto {
 }
 
 export class CreateOrderDto {
+  @Transform(lowercaseUuid)
   @IsUUID('4')
   restaurantId!: string
 
@@ -28,4 +30,8 @@ export class CreateOrderDto {
   @ValidateNested({ each: true })
   @Type(() => CreateOrderItemDto)
   items!: CreateOrderItemDto[]
+}
+
+function lowercaseUuid ({ value }: { value: unknown }): unknown {
+  return typeof value === 'string' ? value.toLowerCase() : value
 }
