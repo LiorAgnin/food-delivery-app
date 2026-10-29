@@ -1,7 +1,10 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
+import '../../application/auth_session.dart';
 import '../../application/restaurant_list.dart';
 import '../../domain/catalog/catalog.dart';
 import '../../domain/failures/api_error.dart';
@@ -25,6 +28,22 @@ class RestaurantListScreen extends ConsumerWidget {
             icon: const Icon(Icons.chat_bubble_outline),
           ),
           const CartBadgeButton(),
+          PopupMenuButton<String>(
+            key: const Key('restaurant_overflow'),
+            tooltip: 'Account',
+            onSelected: (value) {
+              if (value == 'sign_out') {
+                unawaited(ref.read(authSessionProvider.notifier).signOut());
+              }
+            },
+            itemBuilder: (context) => const [
+              PopupMenuItem<String>(
+                key: Key('sign_out'),
+                value: 'sign_out',
+                child: Text('Sign out'),
+              ),
+            ],
+          ),
         ],
       ),
       body: async.when(
