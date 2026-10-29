@@ -38,7 +38,7 @@ const KNOWN_DISHES = [
   'Spicy chicken schnitzel',
   'Spicy chicken platter',
   'Half spicy chicken',
-  'Salmon nigiri',
+  'Salmon nigiri sushi',
   'Lentil soup',
   'White truffle tagliatelle',
   'Hummus',

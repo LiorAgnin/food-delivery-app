@@ -30,7 +30,7 @@ void main() {
 
       await $('Trattoria HaYarkon').scrollTo();
       await $('Trattoria HaYarkon').tap();
-      await $('Margherita')
+      await $('Margherita pizza')
           .waitUntilVisible(timeout: const Duration(seconds: 30));
 
       await $('White truffle tagliatelle').scrollTo();
@@ -42,10 +42,10 @@ void main() {
         findsNothing,
       );
 
-      await $('Margherita').scrollTo();
+      await $('Margherita pizza').scrollTo();
       await $.tester.tap(
         find.descendant(
-          of: _menuTile('Margherita'),
+          of: _menuTile('Margherita pizza'),
           matching: find.byIcon(Icons.add),
         ),
       );
