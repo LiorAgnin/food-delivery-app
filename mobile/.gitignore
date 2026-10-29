@@ -49,3 +49,4 @@ app.*.map.json
 
 # Patrol regenerates this entrypoint. The file says not to commit it.
 /patrol_test/test_bundle.dart
+.patrol.env
