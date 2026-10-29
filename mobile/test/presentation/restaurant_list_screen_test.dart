@@ -265,7 +265,7 @@ void main() {
     }
 
     await pump(const SignedOut());
-    expect(find.text('TODO(owner): login'), findsOneWidget);
+    expect(find.byKey(const Key('login_phone_field')), findsOneWidget);
 
     await pump(
       const SignedIn(
@@ -274,6 +274,6 @@ void main() {
       ),
     );
     expect(find.byKey(const Key('restaurant_list_empty')), findsOneWidget);
-    expect(find.text('TODO(owner): login'), findsNothing);
+    expect(find.byKey(const Key('login_phone_field')), findsNothing);
   });
 }
