@@ -98,6 +98,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               Text(state.errorMessage!, key: const Key('login_error')),
             ],
             const SizedBox(height: 16),
+            if (state.busy)
+              const Padding(
+                padding: EdgeInsets.only(bottom: 16),
+                child: Center(
+                  child: SizedBox(
+                    key: Key('login_loading'),
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                ),
+              ),
             if (state.phase == LoginPhase.phone)
               FilledButton(
                 key: const Key('login_continue'),
