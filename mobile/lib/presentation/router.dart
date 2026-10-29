@@ -5,6 +5,7 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import '../application/auth_session.dart';
 import '../domain/auth/auth.dart';
 import 'auth/login_screen.dart';
+import 'chat/chat_screen.dart';
 import 'placeholder_screen.dart';
 import 'restaurants/menu_screen.dart';
 import 'restaurants/restaurant_list_screen.dart';
@@ -31,10 +32,7 @@ GoRouter appRouter(Ref ref) {
       return null;
     },
     routes: [
-      GoRoute(
-        path: '/login',
-        builder: (context, state) => const LoginScreen(),
-      ),
+      GoRoute(path: '/login', builder: (context, state) => const LoginScreen()),
       GoRoute(
         path: '/restaurants',
         builder: (context, state) => const RestaurantListScreen(),
@@ -57,11 +55,7 @@ GoRouter appRouter(Ref ref) {
           label: 'TODO(owner): order ${state.pathParameters['id']}',
         ),
       ),
-      GoRoute(
-        path: '/chat',
-        builder: (context, state) =>
-            const PlaceholderScreen(label: 'TODO(owner): chat'),
-      ),
+      GoRoute(path: '/chat', builder: (context, state) => const ChatScreen()),
     ],
   );
 
