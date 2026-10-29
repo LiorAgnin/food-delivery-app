@@ -1,4 +1,4 @@
-import { Injectable, type PipeTransform } from '@nestjs/common'
+import { Injectable, type ArgumentMetadata, type PipeTransform } from '@nestjs/common'
 import { DomainError } from './domain-error'
 
 const UUID_V4 =
@@ -6,10 +6,14 @@ const UUID_V4 =
 
 @Injectable()
 export class ParseUuidPipe implements PipeTransform<string, string> {
-  transform (value: string): string {
+  transform (value: string, metadata: ArgumentMetadata): string {
+    const field =
+      typeof metadata.data === 'string' && metadata.data.length > 0
+        ? metadata.data
+        : 'id'
     if (!UUID_V4.test(value)) {
       throw new DomainError('VALIDATION_FAILED', 'Validation failed', {
-        fields: { id: ['must be a UUID v4'] },
+        fields: { [field]: ['must be a UUID v4'] },
       })
     }
     return value

@@ -1,14 +1,17 @@
 import {
+  Body,
   Controller,
+  Get,
   type INestApplication,
   Module,
+  Param,
   Post,
-  Body,
 } from '@nestjs/common'
 import { Test } from '@nestjs/testing'
 import { IsString } from 'class-validator'
 import request from 'supertest'
 import { configureApp } from '../configure-app'
+import { ParseUuidPipe } from './parse-uuid.pipe'
 
 class ProbeBody {
   @IsString()
@@ -20,6 +23,13 @@ class ProbeController {
   @Post()
   create (@Body() _body: ProbeBody): { ok: true } {
     return { ok: true }
+  }
+
+  @Get(':restaurantId')
+  byRestaurant (
+    @Param('restaurantId', ParseUuidPipe) restaurantId: string,
+  ): { restaurantId: string } {
+    return { restaurantId }
   }
 }
 
@@ -61,6 +71,17 @@ describe('validation envelope', () => {
 
     expect(response.body.error.code).toBe('VALIDATION_FAILED')
     expect(response.body.error.details.fields.extra).toBeDefined()
+  })
+
+  it('names the invalid uuid field after the route param', async () => {
+    const response = await request(app.getHttpServer())
+      .get('/api/probe/not-a-uuid')
+      .expect(400)
+
+    expect(response.body.error.code).toBe('VALIDATION_FAILED')
+    expect(response.body.error.details.fields).toEqual({
+      restaurantId: ['must be a UUID v4'],
+    })
   })
 
   it('accepts a valid body', async () => {
