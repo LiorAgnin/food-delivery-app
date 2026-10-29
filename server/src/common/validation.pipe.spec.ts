@@ -26,9 +26,9 @@ class ProbeController {
   }
 
   @Get(':restaurantId')
-  byRestaurant (
-    @Param('restaurantId', ParseUuidPipe) restaurantId: string,
-  ): { restaurantId: string } {
+  byRestaurant (@Param('restaurantId', ParseUuidPipe) restaurantId: string): {
+    restaurantId: string
+  } {
     return { restaurantId }
   }
 }

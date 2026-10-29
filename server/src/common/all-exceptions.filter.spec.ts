@@ -87,7 +87,10 @@ describe('exception envelope', () => {
 
   it('maps an unmapped 4xx HttpException to VALIDATION_FAILED', () => {
     const captured = capture()
-    filter.catch(new HttpException('unsupported media type', 415), captured.host)
+    filter.catch(
+      new HttpException('unsupported media type', 415),
+      captured.host,
+    )
     expect(captured.status()).toBe(400)
     expect(captured.body()).toEqual({
       error: {
@@ -100,7 +103,10 @@ describe('exception envelope', () => {
 
   it('keeps a DomainError code', () => {
     const captured = capture()
-    filter.catch(new DomainError('NOT_FOUND', 'Restaurant not found'), captured.host)
+    filter.catch(
+      new DomainError('NOT_FOUND', 'Restaurant not found'),
+      captured.host,
+    )
     expect(captured.status()).toBe(404)
     expect(captured.body()).toEqual({
       error: {

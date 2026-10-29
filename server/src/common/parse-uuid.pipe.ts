@@ -1,4 +1,8 @@
-import { Injectable, type ArgumentMetadata, type PipeTransform } from '@nestjs/common'
+import {
+  Injectable,
+  type ArgumentMetadata,
+  type PipeTransform,
+} from '@nestjs/common'
 import { DomainError } from './domain-error'
 
 const UUID_V4 =

@@ -28,15 +28,23 @@ type MenuItem = {
 
 type MenuCategory = { id: string; name: string; items: MenuItem[] }
 
-async function menuOf (app: INestApplication, id: string | undefined): Promise<MenuCategory[]> {
+async function menuOf (
+  app: INestApplication,
+  id: string | undefined,
+): Promise<MenuCategory[]> {
   const response = await request(app.getHttpServer())
     .get(`/api/restaurants/${id}/menu`)
     .expect(200)
   return response.body.categories as MenuCategory[]
 }
 
-function itemsNamed (categories: MenuCategory[], categoryName: string): MenuItem[] {
-  return categories.find((category) => category.name === categoryName)?.items ?? []
+function itemsNamed (
+  categories: MenuCategory[],
+  categoryName: string,
+): MenuItem[] {
+  return (
+    categories.find((category) => category.name === categoryName)?.items ?? []
+  )
 }
 
 describe('catalog', () => {
@@ -63,17 +71,21 @@ describe('catalog', () => {
       .expect(200)
     const restaurants = response.body.restaurants as Restaurant[]
 
-    expect(restaurants.map((restaurant) => ({
-      name: restaurant.name,
-      isOpen: restaurant.isOpen,
-    }))).toEqual([
+    expect(
+      restaurants.map((restaurant) => ({
+        name: restaurant.name,
+        isOpen: restaurant.isOpen,
+      })),
+    ).toEqual([
       { name: 'Alei Gefen', isOpen: true },
       { name: 'HaTachana Grill', isOpen: true },
       { name: 'Sushi Yama', isOpen: true },
       { name: 'Trattoria HaYarkon', isOpen: true },
       { name: 'Falafel HaShuk', isOpen: false },
     ])
-    const alei = restaurants.find((restaurant) => restaurant.name === 'Alei Gefen')
+    const alei = restaurants.find(
+      (restaurant) => restaurant.name === 'Alei Gefen',
+    )
     const grill = restaurants.find(
       (restaurant) => restaurant.name === 'HaTachana Grill',
     )
@@ -116,7 +128,9 @@ describe('catalog', () => {
       'Mains',
       'Drinks',
     ])
-    expect(categories.map((category) => category.items.map((item) => item.name))).toEqual([
+    expect(
+      categories.map((category) => category.items.map((item) => item.name)),
+    ).toEqual([
       ['Caprese', 'Focaccia', 'Minestrone'],
       [
         'Margherita pizza',
@@ -140,9 +154,13 @@ describe('catalog', () => {
   })
 
   it('serves the dishes later search depends on', async () => {
-    const list = await request(app.getHttpServer()).get('/api/restaurants').expect(200)
+    const list = await request(app.getHttpServer())
+      .get('/api/restaurants')
+      .expect(200)
     const restaurants = list.body.restaurants as Restaurant[]
-    const byName = new Map(restaurants.map((restaurant) => [restaurant.name, restaurant]))
+    const byName = new Map(
+      restaurants.map((restaurant) => [restaurant.name, restaurant]),
+    )
 
     const sushi = byName.get('Sushi Yama')
     expect(sushi?.cuisine).toBe('Japanese')
@@ -156,7 +174,9 @@ describe('catalog', () => {
         `${item.name} ${item.description}`.toLowerCase().includes('sushi'),
       ),
     ).toBe(true)
-    expect(sushiDishes.map((item) => item.name)).toContain('Salmon nigiri sushi')
+    expect(sushiDishes.map((item) => item.name)).toContain(
+      'Salmon nigiri sushi',
+    )
 
     const italianMains = itemsNamed(
       await menuOf(app, byName.get('Trattoria HaYarkon')?.id),
@@ -171,12 +191,16 @@ describe('catalog', () => {
 
     const veganMenu = await menuOf(app, byName.get('Alei Gefen')?.id)
     const veganMains = itemsNamed(veganMenu, 'Mains')
-    expect(veganMains.find((item) => item.name === 'Vegan burger')).toMatchObject({
+    expect(
+      veganMains.find((item) => item.name === 'Vegan burger'),
+    ).toMatchObject({
       priceAgorot: 5200,
       dietaryTags: ['vegan'],
       isAvailable: true,
     })
-    expect(veganMains.find((item) => item.name === 'Lentil and mushroom stew')).toMatchObject({
+    expect(
+      veganMains.find((item) => item.name === 'Lentil and mushroom stew'),
+    ).toMatchObject({
       priceAgorot: 4800,
       dietaryTags: ['vegan'],
     })
@@ -185,11 +209,13 @@ describe('catalog', () => {
       await menuOf(app, byName.get('HaTachana Grill')?.id),
       'Mains',
     )
-    expect(grillMains.map((item) => ({
-      name: item.name,
-      priceAgorot: item.priceAgorot,
-      dietaryTags: item.dietaryTags,
-    }))).toEqual([
+    expect(
+      grillMains.map((item) => ({
+        name: item.name,
+        priceAgorot: item.priceAgorot,
+        dietaryTags: item.dietaryTags,
+      })),
+    ).toEqual([
       {
         name: 'Half spicy chicken',
         priceAgorot: 9200,
@@ -247,7 +273,9 @@ describe('catalog', () => {
       .get('/api/restaurants')
       .expect(200)
     const restaurants = list.body.restaurants as Restaurant[]
-    const alei = restaurants.find((restaurant) => restaurant.name === 'Alei Gefen')
+    const alei = restaurants.find(
+      (restaurant) => restaurant.name === 'Alei Gefen',
+    )
     const trattoria = restaurants.find(
       (restaurant) => restaurant.name === 'Trattoria HaYarkon',
     )
