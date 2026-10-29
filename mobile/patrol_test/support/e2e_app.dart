@@ -7,7 +7,8 @@ import 'package:food_delivery/domain/auth/auth.dart';
 import 'package:patrol/patrol.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// From `tool/e2e.sh`: `--dart-define=API_BASE_URL=http://10.0.2.2:<port>/api`.
+/// From `tool/e2e.sh`: `API_BASE_URL` is `http://localhost:<port>/api` on a
+/// USB device and `http://10.0.2.2:<port>/api` on the emulator.
 /// Empty keeps the platform default inside the data plane.
 const e2eApiBaseUrl = String.fromEnvironment('API_BASE_URL');
 
@@ -16,10 +17,17 @@ const e2eApiBaseUrl = String.fromEnvironment('API_BASE_URL');
 /// The login screen is still `TODO(owner): login`, so this journey cannot
 /// type an OTP. `GET /restaurants` is public; the token only satisfies the
 /// router's signed-in redirect. It is written through [AuthSession.signIn],
-/// the port `verifyOtp` will use once that screen exists. A real JWT is not
-/// required for the catalog, and a 401 from a later authenticated call would
-/// clear this session the same way a user's would.
-Future<void> launchFoodDelivery(PatrolIntegrationTester $) async {
+/// the port `verifyOtp` will use once that screen exists.
+///
+/// [accessToken] defaults to a placeholder, which is enough for the catalog.
+/// `POST /orders` is authenticated: a placeholder 401s and the client clears
+/// the session. Checkout passes a real customer JWT from `E2E_ACCESS_TOKEN`.
+Future<void> launchFoodDelivery(
+  PatrolIntegrationTester $, {
+  String accessToken = 'e2e-catalog',
+  String customerId = '00000000-0000-4000-8000-000000000001',
+  String phone = '+972500000000',
+}) async {
   final prefs = await SharedPreferences.getInstance();
   final boot = bootstrapApp(
     prefs: prefs,
@@ -34,11 +42,8 @@ Future<void> launchFoodDelivery(PatrolIntegrationTester $) async {
   await container
       .read(authSessionProvider.notifier)
       .signIn(
-        accessToken: 'e2e-catalog',
-        customer: const Customer(
-          id: '00000000-0000-4000-8000-000000000001',
-          phone: '+972500000000',
-        ),
+        accessToken: accessToken,
+        customer: Customer(id: customerId, phone: phone),
       );
   await $.pump();
 }
