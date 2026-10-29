@@ -130,6 +130,25 @@ describe('otp auth', () => {
     expect(replay.body.error.code).toBe('OTP_INVALID')
   })
 
+  it('rejects the older code after a newer one was consumed', async () => {
+    const phone = '+972501110008'
+    const http = request(app.getHttpServer())
+    await http.post('/api/auth/otp/request').send({ phone }).expect(202)
+    await http.post('/api/auth/otp/request').send({ phone }).expect(202)
+
+    const verified = await http
+      .post('/api/auth/otp/verify')
+      .send({ phone, code: '123456' })
+      .expect(200)
+    expect(verified.body.customer.phone).toBe(phone)
+
+    const replay = await http
+      .post('/api/auth/otp/verify')
+      .send({ phone, code: '123456' })
+      .expect(401)
+    expect(replay.body.error.code).toBe('OTP_INVALID')
+  })
+
   it('allows three code requests in ten minutes and blocks the fourth', async () => {
     const phone = '+972501110006'
     const http = request(app.getHttpServer())

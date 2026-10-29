@@ -99,7 +99,9 @@ export class OtpService {
       await tx
         .update(otpChallenges)
         .set({ consumedAt: this.clock.now() })
-        .where(eq(otpChallenges.id, active.id))
+        .where(
+          and(eq(otpChallenges.phone, phone), isNull(otpChallenges.consumedAt)),
+        )
 
       const [customer] = await tx
         .insert(customers)
