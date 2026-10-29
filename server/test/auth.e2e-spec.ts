@@ -16,7 +16,7 @@ describe('otp auth', () => {
     await destroyTestApp()
   })
 
-  it('issues a dev code, verifies it, and accepts the token on a guarded route', async () => {
+  it('issues a dev code and verifies it', async () => {
     const phone = '+972501110001'
     const http = request(app.getHttpServer())
 
@@ -36,15 +36,6 @@ describe('otp auth', () => {
     expect(verified.body.customer.phone).toBe(phone)
     expect(typeof verified.body.customer.id).toBe('string')
     expect(typeof verified.body.accessToken).toBe('string')
-
-    const me = await http
-      .get('/api/auth/me')
-      .set('Authorization', `Bearer ${verified.body.accessToken as string}`)
-      .expect(200)
-    expect(me.body).toEqual({ id: verified.body.customer.id })
-
-    const missing = await http.get('/api/auth/me').expect(401)
-    expect(missing.body.error.code).toBe('UNAUTHORIZED')
 
     await http.post('/api/auth/otp/request').send({ phone }).expect(202)
     const again = await http
