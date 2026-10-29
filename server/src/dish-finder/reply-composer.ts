@@ -6,6 +6,8 @@ export type ReplyResult = {
   orderable: boolean
 }
 
+const RESULT_CAP = 10
+
 const TAG_LABEL: Record<DietaryTag, string> = {
   vegetarian: 'vegetarian',
   vegan: 'vegan',
@@ -31,9 +33,11 @@ export function composeReply (input: {
   } = input
   if (results.length === 0) {
     if (cheaperThanPrevious && original.maxPriceAgorot != null) {
-      const filters = describeFilters(original)
-      const asked = filters.length > 0 ? `${filters} ` : ''
-      return `Nothing ${asked}cheaper than ${cheaperThanShekels(original.maxPriceAgorot)}. Those were the cheapest.`
+      return cheaperMiss(
+        original,
+        original.maxPriceAgorot,
+        '. Those were the cheapest.',
+      )
     }
     const quoted = lastUserText.replaceAll("'", '')
     return `I couldn't find anything matching '${quoted}'. Try a cuisine or an ingredient.`
@@ -41,9 +45,11 @@ export function composeReply (input: {
 
   const stock = stockSentence(results)
   if (cheaperThanPrevious && original.maxPriceAgorot != null && relaxed.length > 0) {
-    const filters = describeFilters(original)
-    const asked = filters.length > 0 ? `${filters} ` : ''
-    return `Nothing ${asked}cheaper than ${cheaperThanShekels(original.maxPriceAgorot)}, but here are close alternatives.${stock}`
+    return cheaperMiss(
+      original,
+      original.maxPriceAgorot,
+      `, but here are close alternatives.${stock}`,
+    )
   }
 
   if (relaxed.length === 1 && relaxed[0] === 'maxPriceAgorot') {
@@ -68,13 +74,34 @@ export function composeReply (input: {
   const dishWord = results.length === 1 ? 'dish' : 'dishes'
   if (cheaperThanPrevious && original.maxPriceAgorot != null) {
     const ceiling = cheaperThanShekels(original.maxPriceAgorot)
-    return `Found ${results.length} ${noun}${dishWord} cheaper than ${ceiling}.${stock}`
+    return countedMatch(
+      results.length,
+      `${noun}${dishWord} cheaper than ${ceiling}`,
+      stock,
+    )
   }
   const ceiling =
     original.maxPriceAgorot == null
       ? ''
       : ` under ${formatShekels(original.maxPriceAgorot)}`
-  return `Found ${results.length} ${noun}${dishWord}${ceiling}.${stock}`
+  return countedMatch(results.length, `${noun}${dishWord}${ceiling}`, stock)
+}
+
+function cheaperMiss (
+  intent: SearchIntent,
+  maxPriceAgorot: number,
+  tail: string,
+): string {
+  const filters = describeFilters(intent)
+  const asked = filters.length > 0 ? `${filters} dishes` : 'dishes'
+  return `No ${asked} cheaper than ${cheaperThanShekels(maxPriceAgorot)}${tail}`
+}
+
+function countedMatch (count: number, description: string, stock: string): string {
+  // A full page is the repository cap, so the count is not the total.
+  const lead =
+    count >= RESULT_CAP ? `Here are ${RESULT_CAP}` : `Found ${count}`
+  return `${lead} ${description}.${stock}`
 }
 
 function describeFilters (intent: SearchIntent): string {

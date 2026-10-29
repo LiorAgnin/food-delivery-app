@@ -1,5 +1,6 @@
 import {
   type ArgumentsHost,
+  BadRequestException,
   ForbiddenException,
   HttpException,
 } from '@nestjs/common'
@@ -56,6 +57,24 @@ describe('exception envelope', () => {
     })
   })
 
+  it('hides a JSON syntax error Nest wrapped as BadRequestException', () => {
+    const captured = capture()
+    filter.catch(
+      new BadRequestException(
+        "Expected property name or '}' in JSON at position 1",
+      ),
+      captured.host,
+    )
+    expect(captured.status()).toBe(400)
+    expect(captured.body()).toEqual({
+      error: {
+        code: 'VALIDATION_FAILED',
+        message: 'Malformed JSON body',
+        details: {},
+      },
+    })
+  })
+
   it('maps a malformed body to VALIDATION_FAILED', () => {
     const captured = capture()
     filter.catch(
@@ -66,7 +85,7 @@ describe('exception envelope', () => {
     expect(captured.body()).toEqual({
       error: {
         code: 'VALIDATION_FAILED',
-        message: 'Unexpected token',
+        message: 'Malformed JSON body',
         details: {},
       },
     })

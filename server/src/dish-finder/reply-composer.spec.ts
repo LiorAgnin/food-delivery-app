@@ -87,6 +87,39 @@ describe('composeReply', () => {
     expect(reply).toBe('Found 2 pizza dishes. 2 are out of stock.')
   })
 
+  it('does not state the result cap as the total when more dishes matched', () => {
+    const candidates = [
+      'Quinoa tabbouleh',
+      'Sweet potato fries',
+      'Lentil soup',
+      'Lentil and mushroom stew',
+      'Tofu sabich plate',
+      'Roasted cauliflower steak',
+      'Fresh orange juice',
+      'Oat cappuccino',
+      'Soda water',
+      'Edamame',
+      'Wakame salad',
+    ].map((name) => dish(name))
+
+    const reply = composeReply({
+      original: intent({ includeTags: ['vegan'] }),
+      results: candidates,
+      relaxed: [],
+      lastUserText: 'Vegan dinner, not burgers',
+    })
+
+    expect(candidates).toHaveLength(11)
+    expect(reply).toBe('Here are 10 vegan dishes.')
+    expect(reply).not.toContain('11')
+    expect(reply).not.toContain('Found')
+    for (const candidate of candidates) {
+      expect(
+        reply.toLowerCase().includes(candidate.menuItem.name.toLowerCase()),
+      ).toBe(false)
+    }
+  })
+
   it('explains a price relaxation without quoting a dish price', () => {
     const reply = composeReply({
       original: intent({
@@ -133,7 +166,7 @@ describe('composeReply', () => {
     })
 
     expect(reply).toBe(
-      'Nothing spicy chicken cheaper than ₪48, but here are close alternatives.',
+      'No spicy chicken dishes cheaper than ₪48, but here are close alternatives.',
     )
     expect(reply).not.toContain('47.99')
     expect(reply).not.toContain('45')
@@ -154,7 +187,7 @@ describe('composeReply', () => {
     })
 
     expect(reply).toBe(
-      'Nothing spicy chicken cheaper than ₪48. Those were the cheapest.',
+      'No spicy chicken dishes cheaper than ₪48. Those were the cheapest.',
     )
     expect(reply).not.toContain('47.99')
   })

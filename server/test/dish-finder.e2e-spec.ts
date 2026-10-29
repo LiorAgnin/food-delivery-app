@@ -175,7 +175,7 @@ describe('dish finder', () => {
     ).toBe(true)
     expect(body.intent.includeTags).toEqual(['vegan'])
     expect(body.intent.excludeKeywords).toEqual(['burger'])
-    expect(body.reply).toBe('Found 10 vegan dishes.')
+    expect(body.reply).toBe('Here are 10 vegan dishes.')
     expect(replyOmitsAbsentDishes(body)).toBe(true)
   })
 
@@ -186,7 +186,7 @@ describe('dish finder', () => {
     expect(response.status).toBe(200)
     const body = response.body as SearchBody
 
-    expect(body.results.length).toBeGreaterThan(0)
+    expect(body.results).toHaveLength(10)
     expect(body.intent.openNowOnly).toBe(true)
     expect(body.intent.keywords).toEqual(['sushi'])
     expect(body.relaxed).toEqual([])
@@ -204,7 +204,7 @@ describe('dish finder', () => {
         .toLowerCase()
       expect(haystack).toContain('sushi')
     }
-    expect(body.reply).toBe(`Found ${body.results.length} sushi dishes.`)
+    expect(body.reply).toBe('Here are 10 sushi dishes.')
     expect(replyOmitsAbsentDishes(body)).toBe(true)
   })
 
@@ -299,7 +299,7 @@ describe('dish finder', () => {
     })
     expect(body.relaxed).toEqual(['includeTags'])
     expect(body.reply).toBe(
-      'Nothing spicy chicken cheaper than ₪48, but here are close alternatives.',
+      'No spicy chicken dishes cheaper than ₪48, but here are close alternatives.',
     )
     expect(body.reply).not.toContain('47.99')
     expect(body.reply).not.toContain('Chicken schnitzel pita')
@@ -323,7 +323,7 @@ describe('dish finder', () => {
       sort: 'price_asc',
     })
     expect(body.reply).toBe(
-      'Nothing tagliatelle cheaper than ₪120. Those were the cheapest.',
+      'No tagliatelle dishes cheaper than ₪120. Those were the cheapest.',
     )
   })
 

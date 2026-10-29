@@ -79,14 +79,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     if (isClientFault(exception)) {
-      const message =
-        exception instanceof Error && exception.message.length > 0
-          ? exception.message
-          : 'Validation failed'
       return {
         status: HttpStatus.BAD_REQUEST,
         code: 'VALIDATION_FAILED',
-        message,
+        message: clientFaultMessage(exception),
         details: {},
       }
     }
@@ -111,6 +107,19 @@ function isClientFault (exception: unknown): boolean {
   return status !== undefined && status >= 400 && status < 500
 }
 
+function clientFaultMessage (exception: unknown): string {
+  if (isParseFailure(exception)) return 'Malformed JSON body'
+  if (exception instanceof Error && exception.message.length > 0) {
+    return exception.message
+  }
+  return 'Validation failed'
+}
+
+function isParseFailure (exception: unknown): boolean {
+  if (typeof exception !== 'object' || exception === null) return false
+  return (exception as { type?: unknown }).type === 'entity.parse.failed'
+}
+
 function isBodyParserError (exception: unknown): boolean {
   if (typeof exception !== 'object' || exception === null) return false
   const type = (exception as { type?: unknown }).type
@@ -127,13 +136,29 @@ function readStatus (exception: unknown): number | undefined {
 
 function httpMessage (exception: HttpException): string {
   const body = exception.getResponse()
+  const message = readHttpMessage(body, exception.message)
+  // Nest wraps a JSON SyntaxError as BadRequestException and drops `type`.
+  if (isMalformedJsonMessage(message)) return 'Malformed JSON body'
+  return message
+}
+
+function readHttpMessage (body: unknown, fallback: string): string {
   if (typeof body === 'string' && body.length > 0) return body
   if (typeof body === 'object' && body !== null && 'message' in body) {
     const message = (body as { message: unknown }).message
     if (typeof message === 'string' && message.length > 0) return message
     if (Array.isArray(message)) return 'Validation failed'
   }
-  return exception.message
+  return fallback
+}
+
+function isMalformedJsonMessage (message: string): boolean {
+  return (
+    message.includes('in JSON') ||
+    message.includes('not valid JSON') ||
+    message.includes('Unexpected end of JSON') ||
+    message.includes('Unexpected token')
+  )
 }
 
 function httpDetails (exception: HttpException): Record<string, unknown> {
