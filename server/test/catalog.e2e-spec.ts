@@ -225,6 +225,21 @@ describe('catalog', () => {
     })
   })
 
+  it('returns the VALIDATION_FAILED envelope for an oversized body', async () => {
+    const response = await request(app.getHttpServer())
+      .post('/api/restaurants')
+      .send({ padding: 'x'.repeat(200 * 1024) })
+      .expect(400)
+
+    expect(response.body).toEqual({
+      error: {
+        code: 'VALIDATION_FAILED',
+        message: expect.any(String),
+        details: {},
+      },
+    })
+  })
+
   it('returns the VALIDATION_FAILED envelope for an invalid id', async () => {
     const response = await request(app.getHttpServer())
       .get('/api/restaurants/not-a-uuid/menu')

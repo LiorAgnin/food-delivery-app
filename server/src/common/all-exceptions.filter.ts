@@ -51,6 +51,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     if (exception instanceof HttpException) {
       const status = exception.getStatus()
+      if (status === HttpStatus.FORBIDDEN) {
+        return {
+          status: HttpStatus.UNAUTHORIZED,
+          code: 'UNAUTHORIZED',
+          message: httpMessage(exception),
+          details: httpDetails(exception),
+        }
+      }
       const code = STATUS_CODE[status]
       if (code) {
         return {
@@ -59,6 +67,27 @@ export class AllExceptionsFilter implements ExceptionFilter {
           message: httpMessage(exception),
           details: httpDetails(exception),
         }
+      }
+      if (status >= 400 && status < 500) {
+        return {
+          status: HttpStatus.BAD_REQUEST,
+          code: 'VALIDATION_FAILED',
+          message: httpMessage(exception),
+          details: httpDetails(exception),
+        }
+      }
+    }
+
+    if (isClientFault(exception)) {
+      const message =
+        exception instanceof Error && exception.message.length > 0
+          ? exception.message
+          : 'Validation failed'
+      return {
+        status: HttpStatus.BAD_REQUEST,
+        code: 'VALIDATION_FAILED',
+        message,
+        details: {},
       }
     }
 
@@ -74,6 +103,26 @@ export class AllExceptionsFilter implements ExceptionFilter {
       details: {},
     }
   }
+}
+
+function isClientFault (exception: unknown): boolean {
+  if (isBodyParserError(exception)) return true
+  const status = readStatus(exception)
+  return status !== undefined && status >= 400 && status < 500
+}
+
+function isBodyParserError (exception: unknown): boolean {
+  if (typeof exception !== 'object' || exception === null) return false
+  const type = (exception as { type?: unknown }).type
+  return type === 'entity.too.large' || type === 'entity.parse.failed'
+}
+
+function readStatus (exception: unknown): number | undefined {
+  if (typeof exception !== 'object' || exception === null) return undefined
+  const record = exception as { status?: unknown; statusCode?: unknown }
+  if (typeof record.status === 'number') return record.status
+  if (typeof record.statusCode === 'number') return record.statusCode
+  return undefined
 }
 
 function httpMessage (exception: HttpException): string {
