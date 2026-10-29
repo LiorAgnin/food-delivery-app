@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:food_delivery/domain/api_result.dart';
 import 'package:food_delivery/domain/auth/auth.dart';
 import 'package:food_delivery/domain/ports/auth_repository.dart';
@@ -14,9 +16,14 @@ final class FakeAuthRepository implements AuthRepository {
   final List<String> requestedPhones = [];
   final List<({String phone, String code})> submittedCodes = [];
 
+  /// When set, [requestOtp] and [verifyOtp] wait on it after recording the call.
+  Completer<void>? blockRequest;
+
   @override
   Future<ApiResult<OtpChallenge>> requestOtp(String phone) async {
     requestedPhones.add(phone);
+    final gate = blockRequest;
+    if (gate != null) await gate.future;
     if (requests.isEmpty) {
       return const ApiOk(
         OtpChallenge(expiresInSeconds: 300, devCode: '123456'),
@@ -32,6 +39,8 @@ final class FakeAuthRepository implements AuthRepository {
     required String code,
   }) async {
     submittedCodes.add((phone: phone, code: code));
+    final gate = blockRequest;
+    if (gate != null) await gate.future;
     if (verifications.isEmpty) {
       return ApiOk(
         VerifiedAuth(

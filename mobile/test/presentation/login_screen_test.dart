@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -28,6 +30,38 @@ void main() {
       ),
     );
   }
+
+  testWidgets('a pending request shows a loading indicator', (tester) async {
+    final auth = FakeAuthRepository();
+    final gate = Completer<void>();
+    auth.blockRequest = gate;
+    await pumpApp(tester, auth: auth);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('login_loading')), findsNothing);
+
+    await tester.enterText(
+      find.byKey(const Key('login_phone_field')),
+      '050-123-4567',
+    );
+    await tester.tap(find.byKey(const Key('login_continue')));
+    await tester.pump();
+
+    expect(find.byKey(const Key('login_loading')), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const Key('login_continue')))
+          .onPressed,
+      isNull,
+    );
+
+    // Drop the screen while the request is still open, then release it so
+    // nothing resumes against a disposed provider.
+    await tester.pumpWidget(const SizedBox.shrink());
+    gate.complete();
+    await tester.pump();
+  });
 
   testWidgets('an invalid phone is rejected inline', (tester) async {
     final auth = FakeAuthRepository();

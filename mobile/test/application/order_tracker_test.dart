@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -143,6 +145,43 @@ void main() {
           container.read(orderTrackerProvider('order-1')) as OrderTrackerReady;
       expect(after.order.status, OrderStatus.preparing);
       expect(after.reconnecting, isFalse);
+
+      container.dispose();
+    });
+  });
+
+  test('a slow earlier response does not roll the status backwards', () {
+    fakeAsync((async) {
+      final older = Completer<void>();
+      final orders = FakeOrdersRepository(
+        getResults: [
+          ApiOk(sampleOrder(status: OrderStatus.placed)),
+          ApiOk(sampleOrder(status: OrderStatus.preparing)),
+        ],
+      );
+      orders.blockGet = older;
+      final container = _container(orders, const Duration(seconds: 3));
+      final seen = <OrderStatus>[];
+      container.listen(orderTrackerProvider('order-1'), (_, next) {
+        if (next is OrderTrackerReady) seen.add(next.order.status);
+      });
+
+      async.flushMicrotasks();
+      expect(orders.getCalls, 1);
+
+      // The next tick arrives while the first poll is still held open.
+      // Its scripted response is preparing; the held one is placed.
+      orders.blockGet = null;
+      async.elapse(const Duration(seconds: 3));
+      async.flushMicrotasks();
+
+      older.complete();
+      async.flushMicrotasks();
+
+      async.elapse(const Duration(seconds: 3));
+      async.flushMicrotasks();
+
+      expect(seen, <OrderStatus>[OrderStatus.placed, OrderStatus.preparing]);
 
       container.dispose();
     });
