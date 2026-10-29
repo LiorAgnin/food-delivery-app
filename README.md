@@ -4,6 +4,12 @@ A thin slice of a food delivery marketplace for LevelApp. A NestJS + PostgreSQL 
 
 `docs/CONTRACT.md` is the API and schema contract both sides were built against.
 
+## Demo
+
+The app on an Android phone against `docker compose up`. It shows OTP login, browsing, the dish finder with a "cheaper ones?" follow-up, the cart minimum, and an order polled through to Delivered.
+
+https://github.com/user-attachments/assets/4c590e78-564f-4bde-96d0-12ee8130e47d
+
 ## Run it
 
 ### Backend
