@@ -254,4 +254,4 @@ Mobile:
 
 ## Time spent
 
-About 3 hours, from the first commit at 12:17 to the last at 15:05.
+About 3 hours, from the first commit at 12:17 to the last code commit at 15:03.
