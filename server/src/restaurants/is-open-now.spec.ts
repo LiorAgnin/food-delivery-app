@@ -62,4 +62,31 @@ describe('isOpenNow', () => {
       isOpenNow({ ...accepting, timezone: 'Asia/Jerusalem' }, hours, now),
     ).toBe(false)
   })
+
+  it('keeps a Saturday overnight window open on Sunday morning only', () => {
+    const hours: OpeningHourWindow[] = [
+      { dayOfWeek: 6, opensAt: '22:00', closesAt: '02:00' },
+    ]
+    expect(
+      isOpenNow(accepting, hours, new Date('2026-06-14T01:00:00.000Z')),
+    ).toBe(true)
+    expect(
+      isOpenNow(accepting, hours, new Date('2026-06-13T01:00:00.000Z')),
+    ).toBe(false)
+    expect(
+      isOpenNow(accepting, hours, new Date('2026-06-14T23:00:00.000Z')),
+    ).toBe(false)
+  })
+
+  it('keeps a Sunday-only window closed on Monday', () => {
+    const hours: OpeningHourWindow[] = [
+      { dayOfWeek: 0, opensAt: '09:00', closesAt: '17:00' },
+    ]
+    expect(
+      isOpenNow(accepting, hours, new Date('2026-06-14T12:00:00.000Z')),
+    ).toBe(true)
+    expect(
+      isOpenNow(accepting, hours, new Date('2026-06-15T12:00:00.000Z')),
+    ).toBe(false)
+  })
 })
