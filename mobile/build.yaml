@@ -1,0 +1,10 @@
+# `checked: true` turns shape mismatches into CheckedFromJsonException
+# (an Exception) so ApiClient can map them to `malformed` without catching
+# Error and hiding bugs in our own code.
+targets:
+  $default:
+    builders:
+      json_serializable:
+        options:
+          checked: true
+          explicit_to_json: true
