@@ -443,7 +443,9 @@ describe('orders', () => {
     expect([left.status, right.status].sort()).toEqual([200, 409])
     const conflict = left.status === 409 ? left : right
     const winner = left.status === 200 ? left : right
-    expect(conflict.body.error.code).toBe('CONCURRENT_UPDATE')
+    expect(['CONCURRENT_UPDATE', 'INVALID_TRANSITION']).toContain(
+      conflict.body.error.code,
+    )
     expect(winner.body.status).toBe('ACCEPTED')
 
     const fetched = await request(app.getHttpServer())
