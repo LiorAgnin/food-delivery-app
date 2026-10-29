@@ -54,18 +54,21 @@ final class OrderPollIntervalProvider
 
 String _$orderPollIntervalHash() => r'49c752d0e4516cc1fee1ac10eb8c6bac6d790080';
 
-/// Polls one order until the screen disposes. The interval comes from
-/// [orderPollIntervalProvider] so tests do not wait three real seconds.
+/// Polls one order until a terminal status or until the screen disposes.
+/// The interval comes from [orderPollIntervalProvider] so tests do not wait
+/// three real seconds.
 
 @ProviderFor(OrderTracker)
 final orderTrackerProvider = OrderTrackerFamily._();
 
-/// Polls one order until the screen disposes. The interval comes from
-/// [orderPollIntervalProvider] so tests do not wait three real seconds.
+/// Polls one order until a terminal status or until the screen disposes.
+/// The interval comes from [orderPollIntervalProvider] so tests do not wait
+/// three real seconds.
 final class OrderTrackerProvider
     extends $NotifierProvider<OrderTracker, OrderTrackerState> {
-  /// Polls one order until the screen disposes. The interval comes from
-  /// [orderPollIntervalProvider] so tests do not wait three real seconds.
+  /// Polls one order until a terminal status or until the screen disposes.
+  /// The interval comes from [orderPollIntervalProvider] so tests do not wait
+  /// three real seconds.
   OrderTrackerProvider._({
     required OrderTrackerFamily super.from,
     required String super.argument,
@@ -110,10 +113,11 @@ final class OrderTrackerProvider
   }
 }
 
-String _$orderTrackerHash() => r'387c38d04c0a143c90cac1751a26ce33e88fcba9';
+String _$orderTrackerHash() => r'0dab76ce41a6217fbcc9cd39f1c763bd92cf73e4';
 
-/// Polls one order until the screen disposes. The interval comes from
-/// [orderPollIntervalProvider] so tests do not wait three real seconds.
+/// Polls one order until a terminal status or until the screen disposes.
+/// The interval comes from [orderPollIntervalProvider] so tests do not wait
+/// three real seconds.
 
 final class OrderTrackerFamily extends $Family
     with
@@ -133,8 +137,9 @@ final class OrderTrackerFamily extends $Family
         isAutoDispose: true,
       );
 
-  /// Polls one order until the screen disposes. The interval comes from
-  /// [orderPollIntervalProvider] so tests do not wait three real seconds.
+  /// Polls one order until a terminal status or until the screen disposes.
+  /// The interval comes from [orderPollIntervalProvider] so tests do not wait
+  /// three real seconds.
 
   OrderTrackerProvider call(String orderId) =>
       OrderTrackerProvider._(argument: orderId, from: this);
@@ -143,8 +148,9 @@ final class OrderTrackerFamily extends $Family
   String toString() => r'orderTrackerProvider';
 }
 
-/// Polls one order until the screen disposes. The interval comes from
-/// [orderPollIntervalProvider] so tests do not wait three real seconds.
+/// Polls one order until a terminal status or until the screen disposes.
+/// The interval comes from [orderPollIntervalProvider] so tests do not wait
+/// three real seconds.
 
 abstract class _$OrderTracker extends $Notifier<OrderTrackerState> {
   late final _$args = ref.$arg as String;

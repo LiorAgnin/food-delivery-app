@@ -27,8 +27,9 @@ sealed class OrderTrackerState with _$OrderTrackerState {
   const factory OrderTrackerState.failed(ApiError error) = OrderTrackerFailed;
 }
 
-/// Polls one order until the screen disposes. The interval comes from
-/// [orderPollIntervalProvider] so tests do not wait three real seconds.
+/// Polls one order until a terminal status or until the screen disposes.
+/// The interval comes from [orderPollIntervalProvider] so tests do not wait
+/// three real seconds.
 @riverpod
 class OrderTracker extends _$OrderTracker {
   Timer? _timer;

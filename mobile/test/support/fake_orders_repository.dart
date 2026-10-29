@@ -23,6 +23,9 @@ final class FakeOrdersRepository implements OrdersRepository {
   /// When set, [placeOrder] waits on it after recording the attempt.
   Completer<void>? blockPlace;
 
+  /// When set, [getOrder] waits on it after counting the call.
+  Completer<void>? blockGet;
+
   @override
   Future<ApiResult<Order>> placeOrder({
     required String restaurantId,
@@ -40,6 +43,8 @@ final class FakeOrdersRepository implements OrdersRepository {
   @override
   Future<ApiResult<Order>> getOrder(String orderId) async {
     getCalls += 1;
+    final gate = blockGet;
+    if (gate != null) await gate.future;
     return _at(getResults, getCalls - 1);
   }
 
