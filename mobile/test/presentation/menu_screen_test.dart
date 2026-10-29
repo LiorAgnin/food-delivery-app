@@ -110,6 +110,91 @@ void main() {
     expect(catalog.menuCalls, 2);
   });
 
+  testWidgets('the stepper minus removes one', (tester) async {
+    final catalog = FakeCatalogRepository(menu: ApiOk(sampleMenu()));
+    final container = await pumpMenu(tester, catalog);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const Key('menu_add_i1')));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('menu_increment_i1')));
+    await tester.pump();
+    expect(
+      tester.widget<Text>(find.byKey(const Key('menu_quantity_i1'))).data,
+      '2',
+    );
+
+    await tester.tap(find.byKey(const Key('menu_decrement_i1')));
+    await tester.pump();
+
+    expect(
+      tester.widget<Text>(find.byKey(const Key('menu_quantity_i1'))).data,
+      '1',
+    );
+    expect(container.read(cartProvider).lines.single.quantity, 1);
+  });
+
+  testWidgets('cancel on a cart conflict leaves the other restaurant', (
+    tester,
+  ) async {
+    final here = sampleRestaurant();
+    final catalog = FakeCatalogRepository(
+      menu: ApiOk(sampleMenu(restaurant: here, items: [sampleItem()])),
+    );
+    final container = await pumpMenu(tester, catalog);
+    await tester.pumpAndSettle();
+
+    final elsewhere = sampleRestaurant(id: 'r2', name: 'Pizza Dan');
+    container
+        .read(cartProvider.notifier)
+        .add(
+          sampleItem(id: 'slice', restaurantId: 'r2', name: 'Slice'),
+          elsewhere,
+        );
+    await tester.pump();
+
+    await tester.tap(find.byKey(const Key('menu_add_i1')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const Key('cart_conflict_cancel')));
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('cart_conflict_dialog')), findsNothing);
+    expect(container.read(cartProvider).restaurant?.id, 'r2');
+    expect(container.read(cartProvider).lines.single.item.id, 'slice');
+    expect(container.read(cartProvider).lines.single.quantity, 1);
+  });
+
+  testWidgets('pull to refresh fetches the menu again', (tester) async {
+    final catalog = FakeCatalogRepository(
+      menuResults: [
+        ApiOk(sampleMenu(items: [sampleItem(name: 'Pita shawarma')])),
+        ApiOk(
+          sampleMenu(
+            items: [sampleItem(id: 'i9', name: 'Fries')],
+          ),
+        ),
+      ],
+    );
+    await pumpMenu(tester, catalog);
+    await tester.pumpAndSettle();
+    expect(find.text('Pita shawarma'), findsOneWidget);
+    expect(catalog.menuCalls, 1);
+
+    catalog.holdNextMenu();
+    await tester.fling(find.text('Pita shawarma'), const Offset(0, 300), 1000);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(catalog.menuCalls, 2);
+    expect(find.text('Pita shawarma'), findsOneWidget);
+    expect(find.byKey(const Key('menu_loading')), findsNothing);
+
+    catalog.releaseMenu();
+    await tester.pumpAndSettle();
+    expect(find.text('Fries'), findsOneWidget);
+    expect(find.text('Pita shawarma'), findsNothing);
+  });
+
   testWidgets('an out-of-stock item has no add button', (tester) async {
     final soldOut = sampleItem(id: 'sold-out', isAvailable: false);
     final catalog = FakeCatalogRepository(

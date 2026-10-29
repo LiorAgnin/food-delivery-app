@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:food_delivery/app/app.dart';
+import 'package:food_delivery/application/cart.dart';
 import 'package:food_delivery/application/ports.dart';
 import 'package:food_delivery/domain/api_result.dart';
 import 'package:food_delivery/domain/auth/auth.dart';
@@ -94,6 +95,59 @@ void main() {
 
     expect(find.text('Shawarma Gil'), findsOneWidget);
     expect(catalog.listCalls, 2);
+  });
+
+  testWidgets('the cart badge sums quantities, not lines', (tester) async {
+    final catalog = FakeCatalogRepository(
+      listResults: [
+        ApiOk([sampleRestaurant()]),
+      ],
+    );
+    await tester.pumpWidget(harness(catalog));
+    await tester.pumpAndSettle();
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(RestaurantListScreen)),
+    );
+    final restaurant = sampleRestaurant();
+    container.read(cartProvider.notifier).add(sampleItem(), restaurant);
+    container.read(cartProvider.notifier).add(sampleItem(), restaurant);
+    container
+        .read(cartProvider.notifier)
+        .add(sampleItem(id: 'i2', name: 'Fries'), restaurant);
+    await tester.pump();
+
+    expect(
+      tester.widget<Text>(find.byKey(const Key('cart_badge_count'))).data,
+      '3',
+    );
+  });
+
+  testWidgets('pull to refresh fetches the list again', (tester) async {
+    final catalog = FakeCatalogRepository(
+      listResults: [
+        ApiOk([sampleRestaurant(name: 'Shawarma Gil')]),
+        ApiOk([sampleRestaurant(id: 'r2', name: 'Pizza Dan')]),
+      ],
+    );
+    await tester.pumpWidget(harness(catalog));
+    await tester.pumpAndSettle();
+    expect(find.text('Shawarma Gil'), findsOneWidget);
+    expect(catalog.listCalls, 1);
+
+    catalog.holdNextList();
+    await tester.fling(find.text('Shawarma Gil'), const Offset(0, 300), 1000);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(catalog.listCalls, 2);
+    expect(find.text('Shawarma Gil'), findsOneWidget);
+    expect(find.byKey(const Key('restaurant_list_loading')), findsNothing);
+
+    catalog.releaseList();
+    await tester.pumpAndSettle();
+    expect(find.text('Pizza Dan'), findsOneWidget);
+    expect(find.text('Shawarma Gil'), findsNothing);
   });
 
   testWidgets('dims a closed restaurant, badges it, and still opens the menu', (
