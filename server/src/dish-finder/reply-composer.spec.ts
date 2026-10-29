@@ -130,9 +130,7 @@ describe('composeReply', () => {
       lastUserText: 'vegan burger, not soup',
     })
 
-    expect(reply).toBe(
-      'Nothing vegan burger, but here are close alternatives.',
-    )
+    expect(reply).toBe('Nothing vegan burger, but here are close alternatives.')
   })
 
   it('never mentions a catalog dish that is not in the results', () => {

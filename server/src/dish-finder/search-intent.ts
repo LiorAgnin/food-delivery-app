@@ -32,7 +32,7 @@ export const EMPTY_INTENT: SearchIntent = {
 }
 
 export interface IntentExtractor {
-  extract (
+  extract(
     messages: readonly ChatMessage[],
     context?: ExtractContext,
   ): SearchIntent | Promise<SearchIntent>

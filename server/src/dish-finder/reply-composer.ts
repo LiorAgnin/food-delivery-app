@@ -56,8 +56,10 @@ export function composeReply (input: {
 }
 
 function describeFilters (intent: SearchIntent): string {
-  return [...intent.includeTags.map((tag) => TAG_LABEL[tag]), ...intent.keywords]
-    .join(' ')
+  return [
+    ...intent.includeTags.map((tag) => TAG_LABEL[tag]),
+    ...intent.keywords,
+  ].join(' ')
 }
 
 function formatShekels (agorot: number): string {

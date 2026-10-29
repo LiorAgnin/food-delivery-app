@@ -35,7 +35,10 @@ const DROPS: readonly Drop[] = [
   {
     key: 'keywords',
     active: (intent) => intent.keywords.length > 1,
-    apply: (intent) => ({ ...intent, keywords: [bestKeyword(intent.keywords)] }),
+    apply: (intent) => ({
+      ...intent,
+      keywords: [bestKeyword(intent.keywords)],
+    }),
   },
 ]
 

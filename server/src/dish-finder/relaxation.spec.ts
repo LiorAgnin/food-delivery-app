@@ -77,7 +77,12 @@ describe('relaxationSteps', () => {
           openNowOnly: true,
           sort: 'price_asc',
         }),
-        relaxed: ['maxPriceAgorot', 'excludeKeywords', 'includeTags', 'cuisines'],
+        relaxed: [
+          'maxPriceAgorot',
+          'excludeKeywords',
+          'includeTags',
+          'cuisines',
+        ],
       },
       {
         intent: intent({

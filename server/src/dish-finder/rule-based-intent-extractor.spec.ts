@@ -6,13 +6,7 @@ import {
   type SearchIntent,
 } from './search-intent'
 
-const CATALOG_CUISINES = [
-  'Grill',
-  'Israeli',
-  'Italian',
-  'Japanese',
-  'Vegan',
-]
+const CATALOG_CUISINES = ['Grill', 'Israeli', 'Italian', 'Japanese', 'Vegan']
 
 const EMPTY: SearchIntent = {
   keywords: [],

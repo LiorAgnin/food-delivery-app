@@ -238,7 +238,9 @@ function applyCuisines (
   cuisines: readonly string[],
 ): string {
   let remaining = text
-  const ordered = [...cuisines].sort((left, right) => right.length - left.length)
+  const ordered = [...cuisines].sort(
+    (left, right) => right.length - left.length,
+  )
   for (const cuisine of ordered) {
     const body = cuisine.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
     const pattern = new RegExp(`(?<![a-z0-9])${body}(?![a-z0-9])`, 'gi')

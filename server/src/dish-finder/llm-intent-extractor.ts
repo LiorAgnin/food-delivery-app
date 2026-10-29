@@ -59,7 +59,7 @@ const SEARCH_INTENT_JSON_SCHEMA = {
 } as const
 
 export type IntentLogger = {
-  warn (message: string): void
+  warn(message: string): void
 }
 
 export function chooseLlmProvider (keys: {
@@ -261,7 +261,8 @@ function readToolInput (provider: LlmProvider, body: unknown): unknown {
   if (!('name' in fn) || fn.name !== 'search_intent' || !('arguments' in fn)) {
     return undefined
   }
-  if (typeof fn.arguments === 'string') return JSON.parse(fn.arguments) as unknown
+  if (typeof fn.arguments === 'string')
+    return JSON.parse(fn.arguments) as unknown
   return fn.arguments
 }
 
@@ -291,7 +292,9 @@ function normalizeIntent (
 
 function cleanWords (words: readonly string[]): string[] {
   return unique(
-    words.map((word) => word.trim().toLowerCase()).filter((word) => word.length > 0),
+    words
+      .map((word) => word.trim().toLowerCase())
+      .filter((word) => word.length > 0),
   )
 }
 
