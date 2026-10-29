@@ -32,7 +32,7 @@ export type OtpDecision =
   | { kind: 'invalid' }
 
 export type OtpRequestBody = {
-  expiresInSeconds: 300
+  expiresInSeconds: number
   devCode?: string
 }
 
@@ -56,8 +56,9 @@ export class OtpPolicy {
   ) {}
 
   static requestBody (devMode: boolean, code: string): OtpRequestBody {
-    if (devMode) return { expiresInSeconds: 300, devCode: code }
-    return { expiresInSeconds: 300 }
+    const expiresInSeconds = OTP_TTL_MS / 1000
+    if (devMode) return { expiresInSeconds, devCode: code }
+    return { expiresInSeconds }
   }
 
   windowStart (): Date {
