@@ -12,11 +12,15 @@ final class AppBootstrap {
 }
 
 /// Composition root. Tests bind fakes at this same seam.
-AppBootstrap bootstrapApp({required SharedPreferences prefs}) {
+///
+/// [baseUrl] is the `--dart-define=API_BASE_URL` the Patrol launcher passes
+/// through. Production omits it and [dataPlaneBindings] uses the platform
+/// default.
+AppBootstrap bootstrapApp({required SharedPreferences prefs, String? baseUrl}) {
   return AppBootstrap(
     overrides: [
       sessionStoreProvider.overrideWithValue(PrefsSessionStore(prefs)),
-      ...dataPlaneBindings(),
+      ...dataPlaneBindings(baseUrl: baseUrl),
     ],
   );
 }
