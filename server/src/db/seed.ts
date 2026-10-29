@@ -222,19 +222,19 @@ const CATALOG: RestaurantInput[] = [
         items: [
           {
             name: 'Edamame',
-            description: 'Sea salt',
+            description: 'Sushi-bar snack with sea salt',
             priceAgorot: 1800,
             dietaryTags: ['vegan'],
           },
           {
             name: 'Wakame salad',
-            description: 'Sesame dressing',
+            description: 'Sushi-bar salad with sesame dressing',
             priceAgorot: 2600,
             dietaryTags: ['vegan', 'gluten_free'],
           },
           {
             name: 'Vegetable gyoza',
-            description: 'Pan fried',
+            description: 'Pan-fried sushi-bar dumplings',
             priceAgorot: 3400,
             dietaryTags: ['vegan'],
           },
@@ -244,26 +244,26 @@ const CATALOG: RestaurantInput[] = [
         name: 'Mains',
         items: [
           {
-            name: 'Salmon nigiri',
+            name: 'Salmon nigiri sushi',
             description: 'Four pieces',
             priceAgorot: 5200,
             dietaryTags: ['gluten_free'],
           },
           {
             name: 'Spicy tuna roll',
-            description: 'Eight pieces',
+            description: 'Eight pieces of sushi',
             priceAgorot: 5800,
             dietaryTags: ['spicy'],
           },
           {
             name: 'Avocado maki',
-            description: 'Eight pieces',
+            description: 'Eight pieces of sushi',
             priceAgorot: 3800,
             dietaryTags: ['vegan'],
           },
           {
             name: 'Salmon avocado roll',
-            description: 'Eight pieces',
+            description: 'Eight pieces of sushi',
             priceAgorot: 6400,
           },
         ],
@@ -324,7 +324,7 @@ const CATALOG: RestaurantInput[] = [
         name: 'Mains',
         items: [
           {
-            name: 'Margherita',
+            name: 'Margherita pizza',
             description: 'San Marzano tomato, mozzarella, and basil',
             priceAgorot: 5400,
             dietaryTags: ['vegetarian'],

@@ -18,6 +18,7 @@ type Restaurant = {
 type MenuItem = {
   id: string
   name: string
+  description: string
   isAvailable: boolean
   priceAgorot: number
   dietaryTags: string[]
@@ -116,7 +117,7 @@ describe('catalog', () => {
     expect(categories.map((category) => category.items.map((item) => item.name))).toEqual([
       ['Caprese', 'Focaccia', 'Minestrone'],
       [
-        'Margherita',
+        'Margherita pizza',
         'Mushroom risotto',
         'Pepperoni pizza',
         'White truffle tagliatelle',
@@ -126,7 +127,7 @@ describe('catalog', () => {
 
     const margherita = categories
       .flatMap((category) => category.items)
-      .find((item) => item.name === 'Margherita')
+      .find((item) => item.name === 'Margherita pizza')
     expect(margherita?.priceAgorot).toBe(5400)
 
     const unavailable = categories
@@ -143,6 +144,28 @@ describe('catalog', () => {
 
     const sushi = byName.get('Sushi Yama')
     expect(sushi?.cuisine).toBe('Japanese')
+    const sushiMenu = await menuOf(app, sushi?.id)
+    const sushiDishes = [
+      ...itemsNamed(sushiMenu, 'Starters'),
+      ...itemsNamed(sushiMenu, 'Mains'),
+    ]
+    expect(
+      sushiDishes.every((item) =>
+        `${item.name} ${item.description}`.toLowerCase().includes('sushi'),
+      ),
+    ).toBe(true)
+    expect(sushiDishes.map((item) => item.name)).toContain('Salmon nigiri sushi')
+
+    const italianMains = itemsNamed(
+      await menuOf(app, byName.get('Trattoria HaYarkon')?.id),
+      'Mains',
+    )
+    expect(
+      italianMains.find((item) => item.name === 'Margherita pizza'),
+    ).toMatchObject({
+      priceAgorot: 5400,
+      isAvailable: true,
+    })
 
     const veganMenu = await menuOf(app, byName.get('Alei Gefen')?.id)
     const veganMains = itemsNamed(veganMenu, 'Mains')
