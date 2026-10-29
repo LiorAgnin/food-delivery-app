@@ -51,10 +51,7 @@ final class FakeCatalogRepository implements CatalogRepository {
   Future<ApiResult<List<Restaurant>>> listRestaurants() async {
     listCalls += 1;
     final hold = _listHold;
-    if (hold != null) {
-      _listHold = null;
-      await hold.future;
-    }
+    if (hold != null) await hold.future;
     if (hangList) return Completer<ApiResult<List<Restaurant>>>().future;
     final index = listCalls - 1;
     return index < listResults.length ? listResults[index] : listResults.last;
@@ -64,10 +61,7 @@ final class FakeCatalogRepository implements CatalogRepository {
   Future<ApiResult<RestaurantMenu>> getMenu(String restaurantId) async {
     menuCalls += 1;
     final hold = _menuHold;
-    if (hold != null) {
-      _menuHold = null;
-      await hold.future;
-    }
+    if (hold != null) await hold.future;
     if (hangMenu) return Completer<ApiResult<RestaurantMenu>>().future;
     if (menuResults.isEmpty) {
       return const ApiFailure(

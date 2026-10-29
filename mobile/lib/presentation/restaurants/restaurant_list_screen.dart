@@ -29,17 +29,19 @@ class RestaurantListScreen extends ConsumerWidget {
       ),
       body: async.when(
         skipLoadingOnReload: true,
-        loading: () => const Center(
-          key: Key('restaurant_list_loading'),
-          child: CircularProgressIndicator(),
-        ),
-        error: (error, _) => _Refreshable(
-          onRefresh: () => _reload(ref),
-          child: _ErrorBody(
-            message: _message(error),
-            onRetry: () => ref.invalidate(restaurantListProvider),
-          ),
-        ),
+        loading: () => const _ListLoading(),
+        error: (error, _) {
+          // invalidate() is a refresh, and when() skips loading on refresh,
+          // so a second tap would stack another request on the stale error.
+          if (async.isLoading) return const _ListLoading();
+          return _Refreshable(
+            onRefresh: () => _reload(ref),
+            child: _ErrorBody(
+              message: _message(error),
+              onRetry: () => ref.invalidate(restaurantListProvider),
+            ),
+          );
+        },
         data: (restaurants) => _Refreshable(
           onRefresh: () => _reload(ref),
           child: restaurants.isEmpty
@@ -62,6 +64,18 @@ class RestaurantListScreen extends ConsumerWidget {
   String _message(Object error) {
     if (error is ApiError) return error.message;
     return 'Something went wrong';
+  }
+}
+
+class _ListLoading extends StatelessWidget {
+  const _ListLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      key: Key('restaurant_list_loading'),
+      child: CircularProgressIndicator(),
+    );
   }
 }
 
