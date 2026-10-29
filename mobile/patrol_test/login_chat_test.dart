@@ -59,6 +59,13 @@ void main() {
         '1',
       );
 
+      // A snackbar with an action persists and covers the composer.
+      await $('Added to cart').waitUntilVisible();
+      ScaffoldMessenger.of(
+        $.tester.element(find.byKey(const Key('chat_input'))),
+      ).hideCurrentSnackBar();
+      await $.pump(const Duration(milliseconds: 750));
+
       await $(#chat_input).enterText('cheaper ones?');
       await $(#chat_send).tap(settleTimeout: const Duration(seconds: 30));
 
