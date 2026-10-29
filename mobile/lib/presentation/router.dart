@@ -4,6 +4,8 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../application/auth_session.dart';
 import '../domain/auth/auth.dart';
+import 'cart/cart_screen.dart';
+import 'orders/order_status_screen.dart';
 import 'placeholder_screen.dart';
 import 'restaurants/menu_screen.dart';
 import 'restaurants/restaurant_list_screen.dart';
@@ -46,16 +48,11 @@ GoRouter appRouter(Ref ref) {
           ),
         ],
       ),
-      GoRoute(
-        path: '/cart',
-        builder: (context, state) =>
-            const PlaceholderScreen(label: 'TODO(owner): cart'),
-      ),
+      GoRoute(path: '/cart', builder: (context, state) => const CartScreen()),
       GoRoute(
         path: '/orders/:id',
-        builder: (context, state) => PlaceholderScreen(
-          label: 'TODO(owner): order ${state.pathParameters['id']}',
-        ),
+        builder: (context, state) =>
+            OrderStatusScreen(orderId: state.pathParameters['id']!),
       ),
       GoRoute(
         path: '/chat',

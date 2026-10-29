@@ -71,5 +71,7 @@ else
   base="http://localhost:${port}/api"
 fi
 echo "== patrol $target on $device against $base"
+# Checkout mints a customer JWT on the host. Catalog ignores an empty value.
 patrol test --device "$device" --target "$target" \
-  --dart-define="API_BASE_URL=${base}"
+  --dart-define="API_BASE_URL=${base}" \
+  --dart-define="E2E_ACCESS_TOKEN=${E2E_ACCESS_TOKEN:-}"

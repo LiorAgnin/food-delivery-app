@@ -1,4 +1,5 @@
 import 'package:food_delivery/domain/catalog/catalog.dart';
+import 'package:food_delivery/domain/orders/order.dart';
 
 Restaurant sampleRestaurant({
   String id = 'r1',
@@ -41,6 +42,51 @@ MenuItem sampleItem({
     priceAgorot: priceAgorot,
     dietaryTags: dietaryTags,
     isAvailable: isAvailable,
+  );
+}
+
+Order sampleOrder({
+  String id = 'order-1',
+  OrderStatus status = OrderStatus.placed,
+  String restaurantId = 'r1',
+  String restaurantName = 'Shawarma Gil',
+  List<OrderLine>? items,
+  List<StatusEvent>? statusHistory,
+  int subtotalAgorot = 4200,
+  int deliveryFeeAgorot = 1500,
+  int totalAgorot = 5700,
+}) {
+  return Order(
+    id: id,
+    status: status,
+    restaurantId: restaurantId,
+    restaurantName: restaurantName,
+    items:
+        items ??
+        const [
+          OrderLine(
+            menuItemId: 'i1',
+            name: 'Pita shawarma',
+            unitPriceAgorot: 4200,
+            quantity: 1,
+            lineTotalAgorot: 4200,
+          ),
+        ],
+    subtotalAgorot: subtotalAgorot,
+    deliveryFeeAgorot: deliveryFeeAgorot,
+    totalAgorot: totalAgorot,
+    statusHistory:
+        statusHistory ??
+        [
+          StatusEvent(
+            from: null,
+            to: OrderStatus.placed,
+            actor: Actor.customer,
+            at: DateTime.utc(2026, 10, 29, 18),
+          ),
+        ],
+    createdAt: DateTime.utc(2026, 10, 29, 18),
+    updatedAt: DateTime.utc(2026, 10, 29, 18),
   );
 }
 
