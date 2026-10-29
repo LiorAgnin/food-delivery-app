@@ -6,6 +6,8 @@ export type ReplyResult = {
   orderable: boolean
 }
 
+const RESULT_CAP = 10
+
 const TAG_LABEL: Record<DietaryTag, string> = {
   vegetarian: 'vegetarian',
   vegan: 'vegan',
@@ -68,13 +70,24 @@ export function composeReply (input: {
   const dishWord = results.length === 1 ? 'dish' : 'dishes'
   if (cheaperThanPrevious && original.maxPriceAgorot != null) {
     const ceiling = cheaperThanShekels(original.maxPriceAgorot)
-    return `Found ${results.length} ${noun}${dishWord} cheaper than ${ceiling}.${stock}`
+    return countedMatch(
+      results.length,
+      `${noun}${dishWord} cheaper than ${ceiling}`,
+      stock,
+    )
   }
   const ceiling =
     original.maxPriceAgorot == null
       ? ''
       : ` under ${formatShekels(original.maxPriceAgorot)}`
-  return `Found ${results.length} ${noun}${dishWord}${ceiling}.${stock}`
+  return countedMatch(results.length, `${noun}${dishWord}${ceiling}`, stock)
+}
+
+function countedMatch (count: number, description: string, stock: string): string {
+  // A full page is the repository cap, so the count is not the total.
+  const lead =
+    count >= RESULT_CAP ? `Here are ${RESULT_CAP}` : `Found ${count}`
+  return `${lead} ${description}.${stock}`
 }
 
 function describeFilters (intent: SearchIntent): string {
