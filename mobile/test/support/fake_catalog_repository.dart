@@ -13,7 +13,7 @@ final class FakeCatalogRepository implements CatalogRepository {
     this.hangList = false,
     this.hangMenu = false,
   }) : listResults = listResults ?? const [ApiOk(<Restaurant>[])],
-       menuResults = menuResults ?? [if (menu != null) menu];
+       menuResults = menuResults ?? [?menu];
 
   final List<ApiResult<List<Restaurant>>> listResults;
   final List<ApiResult<RestaurantMenu>> menuResults;
