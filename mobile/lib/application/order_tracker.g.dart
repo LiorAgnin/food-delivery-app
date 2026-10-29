@@ -113,7 +113,7 @@ final class OrderTrackerProvider
   }
 }
 
-String _$orderTrackerHash() => r'0dab76ce41a6217fbcc9cd39f1c763bd92cf73e4';
+String _$orderTrackerHash() => r'31ca5f53d6e651212584fed7d26f8b137dd24519';
 
 /// Polls one order until a terminal status or until the screen disposes.
 /// The interval comes from [orderPollIntervalProvider] so tests do not wait
