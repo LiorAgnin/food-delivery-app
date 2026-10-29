@@ -42,10 +42,11 @@ final class FakeOrdersRepository implements OrdersRepository {
 
   @override
   Future<ApiResult<Order>> getOrder(String orderId) async {
+    final index = getCalls;
     getCalls += 1;
     final gate = blockGet;
     if (gate != null) await gate.future;
-    return _at(getResults, getCalls - 1);
+    return _at(getResults, index);
   }
 
   ApiResult<Order> _at(List<ApiResult<Order>> results, int index) {
