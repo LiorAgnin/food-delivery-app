@@ -8,15 +8,18 @@ part of 'dish_finder_chat.dart';
 
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
-/// Session transcript for the dish finder. Empty until the failing run.
+/// The dish-finder transcript for this app session. Cleared on sign-out.
+/// The server is stateless, so each send posts the clipped conversation.
 
 @ProviderFor(DishFinderChat)
 final dishFinderChatProvider = DishFinderChatProvider._();
 
-/// Session transcript for the dish finder. Empty until the failing run.
+/// The dish-finder transcript for this app session. Cleared on sign-out.
+/// The server is stateless, so each send posts the clipped conversation.
 final class DishFinderChatProvider
     extends $NotifierProvider<DishFinderChat, DishFinderChatState> {
-  /// Session transcript for the dish finder. Empty until the failing run.
+  /// The dish-finder transcript for this app session. Cleared on sign-out.
+  /// The server is stateless, so each send posts the clipped conversation.
   DishFinderChatProvider._()
     : super(
         from: null,
@@ -44,9 +47,10 @@ final class DishFinderChatProvider
   }
 }
 
-String _$dishFinderChatHash() => r'93a2c05188669a5c05cae9bb7f286a15c2db90bd';
+String _$dishFinderChatHash() => r'3fbf408f8eb4637bfa9377b498fc0c66f6afc5c2';
 
-/// Session transcript for the dish finder. Empty until the failing run.
+/// The dish-finder transcript for this app session. Cleared on sign-out.
+/// The server is stateless, so each send posts the clipped conversation.
 
 abstract class _$DishFinderChat extends $Notifier<DishFinderChatState> {
   DishFinderChatState build();
