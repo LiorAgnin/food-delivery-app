@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:food_delivery/application/cart.dart';
 import 'package:food_delivery/application/ports.dart';
 import 'package:food_delivery/domain/api_result.dart';
+import 'package:food_delivery/domain/failures/api_error.dart';
 import 'package:food_delivery/presentation/restaurants/menu_screen.dart';
 
 import '../support/fake_catalog_repository.dart';
@@ -27,6 +28,87 @@ void main() {
     );
     return container;
   }
+
+  testWidgets('shows a loading indicator until the menu arrives', (
+    tester,
+  ) async {
+    await pumpMenu(tester, FakeCatalogRepository(hangMenu: true));
+
+    expect(find.byKey(const Key('menu_loading')), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+  });
+
+  testWidgets('shows an empty state when the menu has no categories', (
+    tester,
+  ) async {
+    final catalog = FakeCatalogRepository(
+      menu: ApiOk(sampleMenu(categories: const [])),
+    );
+
+    await pumpMenu(tester, catalog);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('menu_empty')), findsOneWidget);
+    expect(find.text('No dishes yet'), findsOneWidget);
+  });
+
+  testWidgets('shows the error and retries into the menu', (tester) async {
+    final catalog = FakeCatalogRepository(
+      menuResults: [
+        const ApiFailure(
+          ApiError(code: ApiErrorCode.network, message: 'Offline'),
+        ),
+        ApiOk(sampleMenu(items: [sampleItem(name: 'Pita shawarma')])),
+      ],
+    );
+
+    await pumpMenu(tester, catalog);
+    await tester.pumpAndSettle();
+
+    expect(find.byKey(const Key('menu_error')), findsOneWidget);
+    expect(find.text('Offline'), findsOneWidget);
+    expect(catalog.menuCalls, 1);
+
+    await tester.tap(find.byKey(const Key('menu_retry')));
+    await tester.pumpAndSettle();
+
+    expect(catalog.menuCalls, 2);
+    expect(find.text('Pita shawarma'), findsOneWidget);
+    expect(find.byKey(const Key('menu_error')), findsNothing);
+    expect(find.byKey(const Key('menu_retry')), findsNothing);
+  });
+
+  testWidgets('retry shows loading and does not stack another request', (
+    tester,
+  ) async {
+    final catalog = FakeCatalogRepository(
+      menuResults: [
+        const ApiFailure(
+          ApiError(code: ApiErrorCode.network, message: 'Offline'),
+        ),
+        ApiOk(sampleMenu()),
+      ],
+    );
+
+    await pumpMenu(tester, catalog);
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('menu_retry')), findsOneWidget);
+
+    catalog.holdNextMenu();
+    await tester.tap(find.byKey(const Key('menu_retry')));
+    await tester.pump();
+
+    expect(catalog.menuCalls, 2);
+    expect(find.byKey(const Key('menu_loading')), findsOneWidget);
+    expect(find.byKey(const Key('menu_error')), findsNothing);
+    expect(find.byKey(const Key('menu_retry')), findsNothing);
+
+    catalog.releaseMenu();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Pita shawarma'), findsOneWidget);
+    expect(catalog.menuCalls, 2);
+  });
 
   testWidgets('an out-of-stock item has no add button', (tester) async {
     final soldOut = sampleItem(id: 'sold-out', isAvailable: false);

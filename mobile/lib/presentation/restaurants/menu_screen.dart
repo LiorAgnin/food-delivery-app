@@ -23,26 +23,28 @@ class MenuScreen extends ConsumerWidget {
       appBar: AppBar(title: Text(title), actions: const [CartBadgeButton()]),
       body: async.when(
         skipLoadingOnReload: true,
-        loading: () => const Center(
-          key: Key('menu_loading'),
-          child: CircularProgressIndicator(),
-        ),
-        error: (error, _) => _MenuMessage(
-          onRefresh: () => _reload(ref),
-          child: Column(
-            key: const Key('menu_error'),
-            children: [
-              Text(_message(error), textAlign: TextAlign.center),
-              const SizedBox(height: 12),
-              FilledButton(
-                key: const Key('menu_retry'),
-                onPressed: () =>
-                    ref.invalidate(restaurantMenuProvider(restaurantId)),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
-        ),
+        loading: () => const _MenuLoading(),
+        error: (error, _) {
+          // invalidate() is a refresh, and when() skips loading on refresh,
+          // so a second tap would stack another request on the stale error.
+          if (async.isLoading) return const _MenuLoading();
+          return _MenuMessage(
+            onRefresh: () => _reload(ref),
+            child: Column(
+              key: const Key('menu_error'),
+              children: [
+                Text(_message(error), textAlign: TextAlign.center),
+                const SizedBox(height: 12),
+                FilledButton(
+                  key: const Key('menu_retry'),
+                  onPressed: () =>
+                      ref.invalidate(restaurantMenuProvider(restaurantId)),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          );
+        },
         data: (menu) => _RefreshableMenu(
           onRefresh: () => _reload(ref),
           child: _MenuList(menu: menu),
@@ -63,6 +65,18 @@ class MenuScreen extends ConsumerWidget {
   String _message(Object error) {
     if (error is ApiError) return error.message;
     return 'Something went wrong';
+  }
+}
+
+class _MenuLoading extends StatelessWidget {
+  const _MenuLoading();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      key: Key('menu_loading'),
+      child: CircularProgressIndicator(),
+    );
   }
 }
 

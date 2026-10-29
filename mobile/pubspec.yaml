@@ -26,8 +26,17 @@ dev_dependencies:
     sdk: flutter
   freezed: ^4.0.0
   json_serializable: ^6.14.1
+  patrol: ^4.9.0
   riverpod_generator: ^4.0.8
   riverpod_lint: ^3.1.8
 
 flutter:
   uses-material-design: true
+
+# Patrol e2e. No product flavors; Android package matches applicationId.
+patrol:
+  app_name: food_delivery
+  android:
+    package_name: com.levelapp.food_delivery
+  ios:
+    bundle_id: com.levelapp.foodDelivery

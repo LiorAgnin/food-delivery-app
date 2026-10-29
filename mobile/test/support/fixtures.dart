@@ -44,12 +44,18 @@ MenuItem sampleItem({
   );
 }
 
-RestaurantMenu sampleMenu({Restaurant? restaurant, List<MenuItem>? items}) {
+RestaurantMenu sampleMenu({
+  Restaurant? restaurant,
+  List<MenuItem>? items,
+  List<MenuCategory>? categories,
+}) {
   final current = restaurant ?? sampleRestaurant();
   return RestaurantMenu(
     restaurant: current,
-    categories: [
-      MenuCategory(id: 'c1', name: 'Mains', items: items ?? [sampleItem()]),
-    ],
+    categories:
+        categories ??
+        [
+          MenuCategory(id: 'c1', name: 'Mains', items: items ?? [sampleItem()]),
+        ],
   );
 }

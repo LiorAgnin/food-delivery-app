@@ -64,6 +64,38 @@ void main() {
     expect(find.byKey(const Key('restaurant_list_error')), findsNothing);
   });
 
+  testWidgets('retry shows loading and does not stack another request', (
+    tester,
+  ) async {
+    final catalog = FakeCatalogRepository(
+      listResults: [
+        const ApiFailure(
+          ApiError(code: ApiErrorCode.network, message: 'Offline'),
+        ),
+        ApiOk([sampleRestaurant()]),
+      ],
+    );
+
+    await tester.pumpWidget(harness(catalog));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('restaurant_list_retry')), findsOneWidget);
+
+    catalog.holdNextList();
+    await tester.tap(find.byKey(const Key('restaurant_list_retry')));
+    await tester.pump();
+
+    expect(catalog.listCalls, 2);
+    expect(find.byKey(const Key('restaurant_list_loading')), findsOneWidget);
+    expect(find.byKey(const Key('restaurant_list_error')), findsNothing);
+    expect(find.byKey(const Key('restaurant_list_retry')), findsNothing);
+
+    catalog.releaseList();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Shawarma Gil'), findsOneWidget);
+    expect(catalog.listCalls, 2);
+  });
+
   testWidgets('dims a closed restaurant, badges it, and still opens the menu', (
     tester,
   ) async {
