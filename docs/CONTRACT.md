@@ -136,8 +136,6 @@ Rules, checked in this order inside one transaction:
 
 The same `(customer, Idempotency-Key)` with the same body returns the original order with `200`. A different body returns `IDEMPOTENCY_CONFLICT`. A new order returns `201 Order`. Equality is the sha256 hex of the normalized body: `restaurantId` plus `items` sorted by `menuItemId` (`{ menuItemId, quantity }` only). That digest is `orders.idempotency_body_hash`. UUID strings in the body are compared lowercase.
 
-**Schema ownership.** Only `feat/server-foundation` writes `schema.ts` and `server/drizzle/`. Feature branches request schema changes through the coordinator, so parallel Drizzle migrations can't collide in the journal.
-
 ### `GET /orders/:id` (auth)
 
 `200 Order`. Another customer's order returns `404` so that order IDs don't leak.
