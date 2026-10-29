@@ -1,42 +1,35 @@
 import { DomainError } from '../common/domain-error'
-import {
-  ORDER_STATUSES,
-  type Actor,
-  type OrderStatus,
-  assertTransition,
-} from './order-lifecycle'
+import { assertTransition } from './order-lifecycle'
 
-const ALLOWED: ReadonlyArray<readonly [OrderStatus, OrderStatus, Actor]> = [
-  ['PLACED', 'ACCEPTED', 'restaurant'],
-  ['PLACED', 'CANCELLED', 'customer'],
-  ['PLACED', 'CANCELLED', 'restaurant'],
-  ['ACCEPTED', 'PREPARING', 'restaurant'],
-  ['ACCEPTED', 'CANCELLED', 'restaurant'],
-  ['PREPARING', 'PICKED_UP', 'courier'],
-  ['PICKED_UP', 'DELIVERED', 'courier'],
-]
+const STATUSES = [
+  'PLACED',
+  'ACCEPTED',
+  'PREPARING',
+  'PICKED_UP',
+  'DELIVERED',
+  'CANCELLED',
+] as const
 
-const ILLEGAL: ReadonlyArray<readonly [OrderStatus, OrderStatus, Actor]> = [
-  ['PLACED', 'PREPARING', 'restaurant'],
-  ['PLACED', 'PICKED_UP', 'courier'],
-  ['PLACED', 'DELIVERED', 'courier'],
-  ['ACCEPTED', 'PICKED_UP', 'courier'],
-  ['ACCEPTED', 'DELIVERED', 'courier'],
-  ['ACCEPTED', 'PLACED', 'restaurant'],
-  ['PREPARING', 'DELIVERED', 'courier'],
-  ['PREPARING', 'CANCELLED', 'restaurant'],
-  ['PREPARING', 'ACCEPTED', 'restaurant'],
-  ['PICKED_UP', 'CANCELLED', 'courier'],
-]
+const ACTORS = ['customer', 'restaurant', 'courier', 'system'] as const
 
-const WRONG_ACTOR: ReadonlyArray<readonly [OrderStatus, OrderStatus, Actor]> = [
-  ['PLACED', 'ACCEPTED', 'customer'],
-  ['PLACED', 'ACCEPTED', 'courier'],
-  ['PLACED', 'ACCEPTED', 'system'],
-  ['PLACED', 'CANCELLED', 'courier'],
-  ['PREPARING', 'PICKED_UP', 'restaurant'],
-  ['PICKED_UP', 'DELIVERED', 'restaurant'],
-]
+type OrderStatus = (typeof STATUSES)[number]
+type Actor = (typeof ACTORS)[number]
+
+// Copied from CONTRACT.md's transition table. Not derived from TRANSITIONS.
+const ALLOWED = new Set<string>([
+  'PLACED|ACCEPTED|restaurant',
+  'PLACED|CANCELLED|customer',
+  'PLACED|CANCELLED|restaurant',
+  'ACCEPTED|PREPARING|restaurant',
+  'ACCEPTED|CANCELLED|restaurant',
+  'PREPARING|PICKED_UP|courier',
+  'PICKED_UP|DELIVERED|courier',
+])
+
+const CASES: Array<readonly [OrderStatus, OrderStatus, Actor]> =
+  STATUSES.flatMap((from) =>
+    STATUSES.flatMap((to) => ACTORS.map((actor) => [from, to, actor] as const)),
+  )
 
 function rejection (
   from: OrderStatus,
@@ -53,35 +46,23 @@ function rejection (
 }
 
 describe('assertTransition', () => {
-  it.each(ALLOWED)('allows %s → %s by %s', (from, to, actor) => {
-    expect(() => {
-      assertTransition(from, to, actor)
-    }).not.toThrow()
+  it('covers every from, to, and actor triple', () => {
+    expect(STATUSES).toHaveLength(6)
+    expect(ACTORS).toHaveLength(4)
+    expect(CASES).toHaveLength(144)
+    expect(ALLOWED.size).toBe(7)
   })
 
-  it.each(ILLEGAL)('rejects %s → %s by %s', (from, to, actor) => {
+  it.each(CASES)('%s → %s by %s follows the contract', (from, to, actor) => {
+    const key = `${from}|${to}|${actor}`
+    if (ALLOWED.has(key)) {
+      expect(() => {
+        assertTransition(from, to, actor)
+      }).not.toThrow()
+      return
+    }
     const error = rejection(from, to, actor)
     expect(error.code).toBe('INVALID_TRANSITION')
     expect(error.details).toEqual({ from, to, actor })
   })
-
-  it.each(WRONG_ACTOR)(
-    'rejects %s → %s from the wrong actor %s',
-    (from, to, actor) => {
-      const error = rejection(from, to, actor)
-      expect(error.code).toBe('INVALID_TRANSITION')
-      expect(error.details).toEqual({ from, to, actor })
-    },
-  )
-
-  it.each(['DELIVERED', 'CANCELLED'] as const)(
-    'rejects every move out of terminal %s',
-    (from) => {
-      for (const to of ORDER_STATUSES) {
-        const error = rejection(from, to, 'courier')
-        expect(error.code).toBe('INVALID_TRANSITION')
-        expect(error.details).toEqual({ from, to, actor: 'courier' })
-      }
-    },
-  )
 })

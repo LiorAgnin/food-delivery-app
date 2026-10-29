@@ -17,7 +17,11 @@ import {
 import * as schema from '../db/schema'
 import { isOpenNow } from '../restaurants/is-open-now'
 import { idempotencyBodyHash } from './idempotency-body'
-import { assertTransition, type Actor, type OrderStatus } from './order-lifecycle'
+import {
+  assertTransition,
+  type Actor,
+  type OrderStatus,
+} from './order-lifecycle'
 import { toOrderResponse, type OrderResponse } from './order-response'
 import { priceOrder, type OrderItemRequest } from './price-order'
 
@@ -32,6 +36,7 @@ type OrderDb = Database | OrderTx
 type PlaceResult = { created: boolean; order: OrderResponse }
 
 const IDEMPOTENCY_CONSTRAINT = 'orders_customer_idempotency_uq'
+const CUSTOMER_FK = 'orders_customer_id_customers_id_fk'
 
 @Injectable()
 export class OrdersService {
@@ -93,10 +98,15 @@ export class OrdersService {
       })
     } catch (error) {
       // A unique violation aborts the transaction, so the winner is read after rollback.
-      if (!isIdempotencyRace(error)) throw error
-      const winner = await this.findByKey(this.db, customerId, idempotencyKey)
-      if (!winner) throw error
-      return this.replay(this.db, winner, hash, customerId)
+      if (isIdempotencyRace(error)) {
+        const winner = await this.findByKey(this.db, customerId, idempotencyKey)
+        if (!winner) throw error
+        return this.replay(this.db, winner, hash, customerId)
+      }
+      if (isMissingCustomer(error)) {
+        throw new DomainError('UNAUTHORIZED', 'Unauthorized')
+      }
+      throw error
     }
   }
 
@@ -247,6 +257,32 @@ export class OrdersService {
 }
 
 function isIdempotencyRace (error: unknown): boolean {
+  return walkPgError(error, (record) => {
+    if (record.code !== '23505') return false
+    return (
+      record.constraint === IDEMPOTENCY_CONSTRAINT ||
+      record.message.includes(IDEMPOTENCY_CONSTRAINT)
+    )
+  })
+}
+
+function isMissingCustomer (error: unknown): boolean {
+  return walkPgError(error, (record) => {
+    if (record.code !== '23503') return false
+    return (
+      record.constraint === CUSTOMER_FK || record.message.includes(CUSTOMER_FK)
+    )
+  })
+}
+
+function walkPgError (
+  error: unknown,
+  matches: (record: {
+    code: string
+    constraint: string
+    message: string
+  }) => boolean,
+): boolean {
   const seen = new Set<unknown>()
   let current: unknown = error
   while (current && typeof current === 'object' && !seen.has(current)) {
@@ -257,15 +293,13 @@ function isIdempotencyRace (error: unknown): boolean {
       message?: unknown
       cause?: unknown
     }
-    if (record.code === '23505') {
-      const message = typeof record.message === 'string' ? record.message : ''
-      if (
-        record.constraint === IDEMPOTENCY_CONSTRAINT ||
-        message.includes(IDEMPOTENCY_CONSTRAINT)
-      ) {
-        return true
-      }
+    const fields = {
+      code: typeof record.code === 'string' ? record.code : '',
+      constraint:
+        typeof record.constraint === 'string' ? record.constraint : '',
+      message: typeof record.message === 'string' ? record.message : '',
     }
+    if (matches(fields)) return true
     current = record.cause
   }
   return false
