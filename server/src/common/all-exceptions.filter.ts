@@ -136,13 +136,29 @@ function readStatus (exception: unknown): number | undefined {
 
 function httpMessage (exception: HttpException): string {
   const body = exception.getResponse()
+  const message = readHttpMessage(body, exception.message)
+  // Nest wraps a JSON SyntaxError as BadRequestException and drops `type`.
+  if (isMalformedJsonMessage(message)) return 'Malformed JSON body'
+  return message
+}
+
+function readHttpMessage (body: unknown, fallback: string): string {
   if (typeof body === 'string' && body.length > 0) return body
   if (typeof body === 'object' && body !== null && 'message' in body) {
     const message = (body as { message: unknown }).message
     if (typeof message === 'string' && message.length > 0) return message
     if (Array.isArray(message)) return 'Validation failed'
   }
-  return exception.message
+  return fallback
+}
+
+function isMalformedJsonMessage (message: string): boolean {
+  return (
+    message.includes('in JSON') ||
+    message.includes('not valid JSON') ||
+    message.includes('Unexpected end of JSON') ||
+    message.includes('Unexpected token')
+  )
 }
 
 function httpDetails (exception: HttpException): Record<string, unknown> {
