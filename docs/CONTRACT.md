@@ -32,8 +32,9 @@ opening_hours      restaurant_id fk -> restaurants on delete cascade, day_of_wee
                    opens_at time not null, closes_at time not null      -- closes_at < opens_at means it closes after midnight
                    pk (restaurant_id, day_of_week, opens_at)
 menu_categories    id uuid pk, restaurant_id fk on delete cascade, name text not null, sort_order int not null,
-                   unique (restaurant_id, name)
-menu_items         id uuid pk, restaurant_id fk on delete cascade, category_id fk -> menu_categories,
+                   unique (restaurant_id, name), unique (id, restaurant_id)   -- target of the composite FK below
+menu_items         id uuid pk, restaurant_id fk on delete cascade, category_id not null,
+                   fk (category_id, restaurant_id) -> menu_categories (id, restaurant_id)   -- an item can't sit in another restaurant's category
                    name text not null, description text not null default '', price_agorot int not null check (> 0),
                    dietary_tags text[] not null default '{}'  -- subset of DietaryTag
                    is_available bool not null default true, created_at, updated_at
@@ -134,6 +135,8 @@ Rules, checked in this order inside one transaction:
 5. Prices come from the database, never from the client. Names and prices are snapshotted into `order_items`.
 
 The same `(customer, Idempotency-Key)` with the same body returns the original order with `200`. A different body returns `IDEMPOTENCY_CONFLICT`. A new order returns `201 Order`. Equality is the sha256 hex of the normalized body: `restaurantId` plus `items` sorted by `menuItemId` (`{ menuItemId, quantity }` only). That digest is `orders.idempotency_body_hash`. UUID strings in the body are compared lowercase.
+
+**Schema ownership.** Only `feat/server-foundation` writes `schema.ts` and `server/drizzle/`. Feature branches request schema changes through the coordinator, so parallel Drizzle migrations can't collide in the journal.
 
 ### `GET /orders/:id` (auth)
 
