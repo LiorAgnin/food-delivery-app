@@ -70,15 +70,22 @@ describe('catalog', () => {
       { name: 'Trattoria HaYarkon', isOpen: true },
       { name: 'Falafel HaShuk', isOpen: false },
     ])
-    const closed = restaurants.filter((restaurant) => !restaurant.isOpen)
-    const open = restaurants.filter((restaurant) => restaurant.isOpen)
-    expect(closed[0]?.openingHours).toEqual(open[0]?.openingHours)
-    expect(closed[0]?.openingHours).toEqual(
-      expect.arrayContaining([
-        { dayOfWeek: 0, opensAt: '00:00', closesAt: '12:00' },
-        { dayOfWeek: 0, opensAt: '12:00', closesAt: '00:00' },
-      ]),
+    const alei = restaurants.find((restaurant) => restaurant.name === 'Alei Gefen')
+    const grill = restaurants.find(
+      (restaurant) => restaurant.name === 'HaTachana Grill',
     )
+    const falafel = restaurants.find(
+      (restaurant) => restaurant.name === 'Falafel HaShuk',
+    )
+    expect(falafel?.openingHours).toEqual(grill?.openingHours)
+    expect(alei?.openingHours.filter((hour) => hour.dayOfWeek === 0)).toEqual([
+      { dayOfWeek: 0, opensAt: '00:00', closesAt: '18:00' },
+      { dayOfWeek: 0, opensAt: '18:00', closesAt: '00:00' },
+    ])
+    expect(alei?.openingHours.filter((hour) => hour.dayOfWeek === 1)).toEqual([
+      { dayOfWeek: 1, opensAt: '00:00', closesAt: '12:00' },
+      { dayOfWeek: 1, opensAt: '12:00', closesAt: '00:00' },
+    ])
 
     for (const restaurant of restaurants) {
       expect(restaurant.minOrderAgorot).toEqual(expect.any(Number))

@@ -33,11 +33,17 @@ function fixedUuid (group: 1 | 2 | 3, n: number): string {
   return `${group}0000000-0000-4000-8000-${n.toString(10).padStart(12, '0')}`
 }
 
-// Two windows per day cover every local minute. 12:00–00:00 crosses midnight,
-// so demos stay open at any hour and the only closed restaurant is the manual switch.
+// Two windows per day cover every local minute, so the only closed restaurant
+// is the manual switch. 12:00–00:00 runs until midnight. Alei Gefen (number 1)
+// uses a different Sunday split, so hours are not the same on every day.
 const ALL_DAY_WINDOWS = [
   { opensAt: '00:00:00', closesAt: '12:00:00' },
   { opensAt: '12:00:00', closesAt: '00:00:00' },
+] as const
+
+const SUNDAY_WINDOWS = [
+  { opensAt: '00:00:00', closesAt: '18:00:00' },
+  { opensAt: '18:00:00', closesAt: '00:00:00' },
 ] as const
 
 const CATALOG: RestaurantInput[] = [
@@ -438,16 +444,63 @@ const CATALOG: RestaurantInput[] = [
   },
 ]
 
+const CATEGORY_SORT_ORDER: Record<string, number> = {
+  Starters: 0,
+  Mains: 1,
+  Drinks: 2,
+}
+
+// Response order is open-first, then by name. Insert the closed restaurant
+// first and the open ones out of alphabetical order.
+const RESTAURANT_INSERT_ORDER = [5, 4, 3, 2, 1]
+
+// sort_order stays 0/1/2. Drinks are inserted before Starters.
+const CATEGORY_INSERT_ORDER = ['Drinks', 'Starters', 'Mains']
+
+function restaurantsInInsertOrder (): RestaurantInput[] {
+  return RESTAURANT_INSERT_ORDER.map((number) => {
+    const restaurant = CATALOG.find((item) => item.number === number)
+    if (!restaurant) throw new Error(`Missing seeded restaurant ${number}`)
+    return restaurant
+  })
+}
+
+function categoriesInInsertOrder (
+  categories: RestaurantInput['categories'],
+): RestaurantInput['categories'] {
+  return CATEGORY_INSERT_ORDER.map((name) => {
+    const category = categories.find((item) => item.name === name)
+    if (!category) throw new Error(`Missing seeded category ${name}`)
+    return category
+  })
+}
+
+function categorySortOrder (name: string): number {
+  const sortOrder = CATEGORY_SORT_ORDER[name]
+  if (sortOrder === undefined) throw new Error(`Missing sort order for ${name}`)
+  return sortOrder
+}
+
+function windowsFor (
+  restaurantNumber: number,
+  dayOfWeek: number,
+): ReadonlyArray<{ opensAt: string; closesAt: string }> {
+  if (restaurantNumber === 1 && dayOfWeek === 0) return SUNDAY_WINDOWS
+  return ALL_DAY_WINDOWS
+}
+
 export async function seed (): Promise<void> {
   const env = getEnv()
   const pool = new Pool({ connectionString: env.DATABASE_URL })
   const db = drizzle(pool)
   try {
     await db.transaction(async (tx) => {
+      const seeded = restaurantsInInsertOrder()
+
       await tx
         .insert(restaurants)
         .values(
-          CATALOG.map((restaurant) => ({
+          seeded.map((restaurant) => ({
             id: fixedUuid(1, restaurant.number),
             name: restaurant.name,
             cuisine: restaurant.cuisine,
@@ -463,9 +516,9 @@ export async function seed (): Promise<void> {
       await tx
         .insert(openingHours)
         .values(
-          CATALOG.flatMap((restaurant) =>
+          seeded.flatMap((restaurant) =>
             [0, 1, 2, 3, 4, 5, 6].flatMap((dayOfWeek) =>
-              ALL_DAY_WINDOWS.map((window) => ({
+              windowsFor(restaurant.number, dayOfWeek).map((window) => ({
                 restaurantId: fixedUuid(1, restaurant.number),
                 dayOfWeek,
                 opensAt: window.opensAt,
@@ -479,13 +532,16 @@ export async function seed (): Promise<void> {
       await tx
         .insert(menuCategories)
         .values(
-          CATALOG.flatMap((restaurant) =>
-            restaurant.categories.map((category, categoryIndex) => ({
-              id: fixedUuid(2, restaurant.number * 10 + categoryIndex + 1),
-              restaurantId: fixedUuid(1, restaurant.number),
-              name: category.name,
-              sortOrder: categoryIndex,
-            })),
+          seeded.flatMap((restaurant) =>
+            categoriesInInsertOrder(restaurant.categories).map((category) => {
+              const sortOrder = categorySortOrder(category.name)
+              return {
+                id: fixedUuid(2, restaurant.number * 10 + sortOrder + 1),
+                restaurantId: fixedUuid(1, restaurant.number),
+                name: category.name,
+                sortOrder,
+              }
+            }),
           ),
         )
         .onConflictDoNothing()
@@ -493,24 +549,27 @@ export async function seed (): Promise<void> {
       await tx
         .insert(menuItems)
         .values(
-          CATALOG.flatMap((restaurant) =>
-            restaurant.categories.flatMap((category, categoryIndex) =>
-              category.items.map((item, itemIndex) => ({
-                id: fixedUuid(
-                  3,
-                  restaurant.number * 100 + categoryIndex * 20 + itemIndex + 1,
-                ),
-                restaurantId: fixedUuid(1, restaurant.number),
-                categoryId: fixedUuid(
-                  2,
-                  restaurant.number * 10 + categoryIndex + 1,
-                ),
-                name: item.name,
-                description: item.description,
-                priceAgorot: item.priceAgorot,
-                dietaryTags: item.dietaryTags ?? [],
-                isAvailable: item.isAvailable ?? true,
-              })),
+          seeded.flatMap((restaurant) =>
+            categoriesInInsertOrder(restaurant.categories).flatMap(
+              (category) => {
+                const sortOrder = categorySortOrder(category.name)
+                return category.items.map((item, itemIndex) => ({
+                  id: fixedUuid(
+                    3,
+                    restaurant.number * 100 + sortOrder * 20 + itemIndex + 1,
+                  ),
+                  restaurantId: fixedUuid(1, restaurant.number),
+                  categoryId: fixedUuid(
+                    2,
+                    restaurant.number * 10 + sortOrder + 1,
+                  ),
+                  name: item.name,
+                  description: item.description,
+                  priceAgorot: item.priceAgorot,
+                  dietaryTags: item.dietaryTags ?? [],
+                  isAvailable: item.isAvailable ?? true,
+                }))
+              },
             ),
           ),
         )
